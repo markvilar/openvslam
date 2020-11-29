@@ -92,6 +92,11 @@ if(NOT OpenCV_FOUND)
 endif()
 message(STATUS "Use OpenCV ${OpenCV_VERSION}")
 
+# -----------------------------------------------------------------------------
+# ---- Custom -----------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
 # ----- Install configuration -----
 
 include(CMakePackageConfigHelpers)
@@ -131,6 +136,7 @@ set(USE_PANGOLIN_VIEWER ON CACHE BOOL "Enable Pangolin Viewer")
 set(USE_SOCKET_PUBLISHER OFF CACHE BOOL "Enable Socket Publisher")
 
 add_subdirectory(src)
+add_subdirectory(apps)
 
 set(BUILD_EXAMPLES ON CACHE BOOL "Build examples")
 if(BUILD_EXAMPLES)
