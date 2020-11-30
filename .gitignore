@@ -29,6 +29,10 @@ cmake-build-release/
 *.mod
 *.smod
 
+# VIM swap files
+*.swp
+*.swo
+
 # Compiled Static libraries
 *.lai
 *.la
