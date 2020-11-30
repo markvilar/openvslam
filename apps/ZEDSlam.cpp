@@ -30,25 +30,73 @@
 #include <gperftools/profiler.h>
 #endif
 
+cv::Mat slMat2cvMat(const sl::Mat& input) 
+{
+	int cv_type = -1;
+	switch (input.getDataType()) 
+	{
+		case sl::MAT_TYPE::F32_C1: cv_type = CV_32FC1; break;
+		case sl::MAT_TYPE::F32_C2: cv_type = CV_32FC2; break;
+		case sl::MAT_TYPE::F32_C3: cv_type = CV_32FC3; break;
+		case sl::MAT_TYPE::F32_C4: cv_type = CV_32FC4; break;
+		case sl::MAT_TYPE::U8_C1: cv_type = CV_8UC1; break;
+		case sl::MAT_TYPE::U8_C2: cv_type = CV_8UC2; break;
+		case sl::MAT_TYPE::U8_C3: cv_type = CV_8UC3; break;
+		case sl::MAT_TYPE::U8_C4: cv_type = CV_8UC4; break;
+		default: break;
+	}
+
+	return cv::Mat(input.getHeight(), input.getWidth(), cv_type, 
+		input.getPtr<sl::uchar1>(sl::MEM::CPU));
+}
+
 void stereo_tracking(
 	const std::shared_ptr<openvslam::config>& cfg,
-	const std::string& vocab_file_path, 
-	const std::string& sequence_dir_path,
-	const unsigned int frame_skip, 
-	const bool no_sleep, 
-	const bool auto_term,
-	const bool eval_log, 
-	const std::string& map_db_path, 
-	const bool equal_hist)
+	const std::string& vocabFilePath, 
+	const std::string& svoFile,
+	const unsigned int frameSkip, 
+	const bool noSleep, 
+	const bool autoTerm,
+	const bool evalLog, 
+	const std::string& mapDatabasePath, 
+	const bool histEqualization)
 {
-	// TODO: Find a way to add SVO input!
-	//const euroc_sequence sequence(sequence_dir_path);
-	//const auto frames = sequence.get_frames();
+	// InitParameters - Open SVO file.
+	sl::Camera zed;
+	sl::InitParameters initParameters;
+	initParameters.input.setFromSVOFile(svoFile.c_str());
+	initParameters.svo_real_time_mode = false;
 
-	const openvslam::util::stereo_rectifier rectifier(cfg);
+	// InitParameters - Image processing / calibration.
+	initParameters.camera_disable_self_calib = true;
+	initParameters.enable_image_enhancement = true;
+
+	// InitParameters - Depth estimation.
+	initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
+	initParameters.coordinate_units = sl::UNIT::METER;
+	initParameters.depth_minimum_distance = 0.3;
+	initParameters.depth_maximum_distance = 1.5;
+
+	// RuntimeParameters.
+	sl::RuntimeParameters runtimeParameters;
+	runtimeParameters.confidence_threshold = 50;
+	runtimeParameters.texture_confidence_threshold = 50;
+	
+	auto zedState = zed.open(initParameters);
+	if (zedState != sl::ERROR_CODE::SUCCESS)
+	{
+		std::cerr << toString(zedState) << ": " 
+			<< toVerbose(zedState) << std::endl;
+		return;
+	}
+
+	// Get SVO information.
+	unsigned int nFrames = zed.getSVONumberOfFrames();
+	int fps = zed.getInitParameters().camera_fps;
+	double dt = 1.0f / double(fps);
 
 	// Build and start SLAM process.
-	openvslam::system SLAM(cfg, vocab_file_path);
+	openvslam::system SLAM(cfg, vocabFilePath);
 	SLAM.startup();
 
 	// Create viewer and pass frame- and map publisher.
@@ -58,53 +106,76 @@ void stereo_tracking(
 #endif
 
 	std::vector<double> track_times;
-	track_times.reserve(frames.size());
+	track_times.reserve(nFrames);
 
-	cv::Mat left_img_rect, right_img_rect;
+	sl::Timestamp tsPrev;
+	sl::Timestamp tsNow;
+	sl::Mat leftImageSl, depthMapSl;
+	cv::Mat leftImage, depthMap;
 
-    	// run the SLAM in another thread
+    	// Run the SLAM in another thread
 	std::thread thread([&]() 
 	{
-		for (unsigned int i = 0; i < frames.size(); ++i) 
+		unsigned int frame = 0;
+		while (frame < nFrames - 1) 
 		{
-			const auto& frame = frames.at(i);
-			cv::Mat left_img, right_img;
-			if (equal_hist) 
-			{
-				// TODO: Convert sl matrices to cv.
-				left_img = cv::imread(frame.left_img_path_, 
-					cv::IMREAD_UNCHANGED);
-				right_img = cv::imread(frame.right_img_path_, 
-					cv::IMREAD_UNCHANGED);
-				openvslam::util::equalize_histogram(left_img);
-				openvslam::util::equalize_histogram(right_img);
-			}
-			else 
-			{
-				// TODO: Convert sl matrices to cv.
-				left_img = cv::imread(frame.left_img_path_, 
-					cv::IMREAD_GRAYSCALE);
-				right_img = cv::imread(frame.right_img_path_, 
-					cv::IMREAD_GRAYSCALE);
-			}
-
-			if (left_img.empty() || right_img.empty()) 
+			zedState = zed.grab(runtimeParameters);
+			if (zedState != sl::ERROR_CODE::SUCCESS)
 			{
 				continue;
 			}
+			
+			frame++;
+			
+			if (histEqualization) 
+			{
+				// Get ZED data.
+				zed.retrieveImage(leftImageSl, 
+					sl::VIEW::LEFT, sl::MEM::CPU);
+				zed.retrieveMeasure(depthMapSl, 
+					sl::MEASURE::DEPTH, sl::MEM::CPU);
+				tsPrev = tsNow.getNanoseconds();
+				tsNow = zed.getTimestamp(
+					sl::TIME_REFERENCE::IMAGE);
 
-			// TODO: Let ZED SDK rectify images?
-			rectifier.rectify(left_img, right_img, left_img_rect, 
-				right_img_rect);
+				// Convert to OpenCV.
+				leftImage = slMat2cvMat(leftImageSl);
+				depthMap = slMat2cvMat(depthMapSl);
+				openvslam::util::equalize_histogram(leftImage);
+			}
+			else 
+			{
+				// Get ZED data.
+				zed.retrieveImage(leftImageSl, 
+					sl::VIEW::LEFT_GRAY, sl::MEM::CPU);
+				zed.retrieveMeasure(depthMapSl, 
+					sl::MEASURE::DEPTH, sl::MEM::CPU);
 
+				tsPrev = tsNow.getNanoseconds();
+				tsNow = zed.getTimestamp(
+					sl::TIME_REFERENCE::IMAGE);
+
+				// Convert to OpenCV.
+				leftImage = slMat2cvMat(leftImageSl);
+				depthMap = slMat2cvMat(depthMapSl);
+			}
+
+			if (leftImage.empty() || depthMap.empty()) 
+			{
+				continue;
+			}
+			
 			const auto tp_1 = std::chrono::steady_clock::now();
 
-			if (i % frame_skip == 0) 
+			if (frame % frameSkip == 0) 
 			{
-				// Input the current frame and estimate the 
-				// camera pose.
-				SLAM.feed_stereo_frame(left_img_rect, 
-					right_img_rect, frame.timestamp_);
+				if (tsPrev.getMicroseconds() != 0)
+				{
+					dt = double(tsNow.getMicroseconds() 
+						- tsPrev.getMicroseconds()) 
+						/ double(1e6);
+				}
+				SLAM.feed_RGBD_frame(leftImage, depthMap, dt);
 			}
 
 			const auto tp_2 = std::chrono::steady_clock::now();
@@ -112,18 +183,17 @@ void stereo_tracking(
 			const auto track_time = std::chrono::duration_cast
 				<std::chrono::duration<double>>(tp_2 - tp_1)
 				.count();
-			if (i % frame_skip == 0) 
+			if (frame % frameSkip == 0) 
 			{
 				track_times.push_back(track_time);
 			}
 
 			// Wait until the timestamp of the next frame.
-			if (!no_sleep && i < frames.size() - 1) 
+			if (!noSleep && frame < nFrames - 1) 
 			{
-				const auto wait_time = 
-					frames.at(i + 1).timestamp_ 
-					- (frame.timestamp_ + track_time);
-				if (0.0 < wait_time) 
+				const auto wait_time = 1.0f / double(fps) 
+					- track_time;
+				if (wait_time > 0.0) 
 				{
 					std::this_thread::sleep_for(
 						std::chrono::microseconds(
@@ -147,7 +217,7 @@ void stereo_tracking(
 
 	// Automatically close the viewer.
 #ifdef USE_PANGOLIN_VIEWER
-	if (auto_term) 
+	if (autoTerm) 
 	{
 		viewer.request_terminate();
 	}
@@ -165,7 +235,7 @@ void stereo_tracking(
 	SLAM.shutdown();
 
 	// Output information for evaluation.
-	if (eval_log) 
+	if (evalLog) 
 	{
 		SLAM.save_frame_trajectory("frame_trajectory.txt", "TUM");
 		SLAM.save_keyframe_trajectory("keyframe_trajectory.txt", "TUM");
@@ -181,9 +251,9 @@ void stereo_tracking(
 	}
 
 	// Output map information.
-	if (!map_db_path.empty()) 
+	if (!mapDatabasePath.empty()) 
 	{
-		SLAM.save_map_database(map_db_path);
+		SLAM.save_map_database(mapDatabasePath);
 	}
 
 	std::sort(track_times.begin(), track_times.end());
@@ -205,24 +275,24 @@ int main(int argc, char* argv[])
 	// Create options.
 	popl::OptionParser op("Allowed options");
 	auto help = op.add<popl::Switch>("h", "help", "produce help message");
-	auto vocab_file_path = op.add<popl::Value<std::string>>("v", "vocab", 
+	auto vocabFilePath = op.add<popl::Value<std::string>>("v", "vocab", 
 		"vocabulary file path");
-	auto data_dir_path = op.add<popl::Value<std::string>>("d", "data-dir", 
-		"directory path which contains dataset");
+	auto svo_file_path = op.add<popl::Value<std::string>>("s", "svo", 
+		"SVO file containing the data.");
 	auto config_file_path = op.add<popl::Value<std::string>>("c", "config",
 		"config file path");
-	auto frame_skip = op.add<popl::Value<unsigned int>>("", "frame-skip",
+	auto frameSkip = op.add<popl::Value<unsigned int>>("", "frame-skip",
 		"interval of frame skip", 1);
-	auto no_sleep = op.add<popl::Switch>("", "no-sleep",
+	auto noSleep = op.add<popl::Switch>("", "no-sleep",
 		"not wait for next frame in real time");
-	auto auto_term = op.add<popl::Switch>("", "auto-term", 
+	auto autoTerm = op.add<popl::Switch>("", "auto-term", 
 		"automatically terminate the viewer");
 	auto debug_mode = op.add<popl::Switch>("", "debug", "debug mode");
-	auto eval_log = op.add<popl::Switch>("", "eval-log", 
+	auto evalLog = op.add<popl::Switch>("", "eval-log", 
 		"store trajectory and tracking times for evaluation");
-	auto map_db_path = op.add<popl::Value<std::string>>("p", "map-db", 
+	auto mapDatabasePath = op.add<popl::Value<std::string>>("p", "map-db", 
 		"store a map database at this path after SLAM", "");
-	auto equal_hist = op.add<popl::Switch>("", "equal-hist", 
+	auto histEqualization = op.add<popl::Switch>("", "equal-hist", 
 		"apply histogram equalization");
 
 	try 
@@ -244,8 +314,8 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (!vocab_file_path->is_set() || !data_dir_path->is_set() 
-		|| !config_file_path->is_set()) 
+	if (!vocabFilePath->is_set() || !svo_file_path->is_set() || 
+		!config_file_path->is_set())
 	{
 		std::cerr << "invalid arguments" << std::endl;
 		std::cerr << std::endl;
@@ -283,12 +353,13 @@ int main(int argc, char* argv[])
 
 	// Run tracking.
 	if (cfg->camera_->setup_type_ 
-		== openvslam::camera::setup_type_t::Stereo)
+		== openvslam::camera::setup_type_t::RGBD)
 	{
-		stereo_tracking(cfg, vocab_file_path->value(), 
-			data_dir_path->value(),
-		frame_skip->value(), no_sleep->is_set(), auto_term->is_set(),
-		eval_log->is_set(), map_db_path->value(), equal_hist->is_set());
+		stereo_tracking(cfg, vocabFilePath->value(), 
+			svo_file_path->value(), frameSkip->value(), 
+			noSleep->is_set(), autoTerm->is_set(), 
+			evalLog->is_set(), mapDatabasePath->value(), 
+			histEqualization->is_set());
 	}
 	else 
 	{

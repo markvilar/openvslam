@@ -1,4 +1,16 @@
 # -----------------------------------------------------------------------------
+# ---- Definitions ------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+if(USE_PANGOLIN_VIEWER)
+    message(STATUS "Viewer for examples: PangolinViewer")
+else()
+    message(STATUS "Viewer for examples: None")
+endif()
+
+set(ZED_CXX_FLAGS "")
+
+# -----------------------------------------------------------------------------
 # ---- Dependencies -----------------------------------------------------------
 # -----------------------------------------------------------------------------
 
@@ -58,15 +70,11 @@ endif()
 # -----------------------------------------------------------------------------
 
 add_executable(ZEDSlam ZEDSlam.cpp)
-
-target_include_directories(ZEDSlam PRIVATE
+target_include_directories(ZEDSlam PUBLIC 
 	${CUDA_INCLUDE_DIRS}
 	${ZED_INCLUDE_DIRS}
-	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rd/popl/include>
-	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rd/spdlog/include>)
-
-target_compile_features(ZEDSlam PRIVATE cxx_std_17)
-
+	${popl_INCLUDE_DIR})
+target_compile_features(ZEDSlam PRIVATE cxx_std_17 ${ZED_CXX_FLAGS})
 target_link_libraries(ZEDSlam PRIVATE 
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
@@ -74,33 +82,9 @@ target_link_libraries(ZEDSlam PRIVATE
 	opencv_imgcodecs
 	opencv_videoio)
 
-# -----------------------------------------------------------------------------
-# ---- Definitions ------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-if(USE_PANGOLIN_VIEWER)
-    message(STATUS "Viewer for examples: PangolinViewer")
-else()
-    message(STATUS "Viewer for examples: None")
-endif()
-
-# Setup stack trace logger
-if(USE_STACK_TRACE_LOGGER)
-	target_compile_definitions(ZEDSlam PRIVATE 
-		USE_STACK_TRACE_LOGGER)
-	target_link_libraries(ZEDSlam PRIVATE ${GLOG_LIBRARIES})
-endif()
-
 if(USE_PANGOLIN_VIEWER)
         target_compile_definitions(ZEDSlam PRIVATE USE_PANGOLIN_VIEWER)
         target_link_libraries(ZEDSlam PRIVATE pangolin_viewer)
 endif()
 
-    # Setup google-perftools
-if(USE_GOOGLE_PERFTOOLS)
-	target_compile_definitions(ZEDSlam PRIVATE 
-		USE_GOOGLE_PERFTOOLS)
-        target_link_libraries(ZEDSlam PRIVATE 
-		${GPERFTOOLS_LIBRARIES})
-endif()
 

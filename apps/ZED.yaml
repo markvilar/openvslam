@@ -3,24 +3,43 @@
 # -----------------------------------------------------------------------------
 
 Camera.name: "ZED"
-Camera.setup: "stereo"
+Camera.setup: "RGBD"
 Camera.model: "perspective"
+
+Camera.fx: 932.3021
+Camera.fy: 844.0283
+Camera.cx: 646.1144
+Camera.cy: 428.8495
+
+# Images already rectified by the ZED SDK.
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+Camera.k3: 0.0
+
+Camera.fps: 30.0
+Camera.cols: 1280
+Camera.rows: 720
+Camera.focal_x_baseline: 112.8
+
+Camera.color_order: "Gray"
 
 # -----------------------------------------------------------------------------
 # ---- ORB Parameters ---------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-Feature.max_num_keypoints: 1000
+Feature.max_num_keypoints: 2000
 Feature.scale_factor: 1.2
 Feature.num_levels: 8
 Feature.ini_fast_threshold: 20
-Feature.min_fast_threshold: 7
+Feature.min_fast_threshold: 10
 
 # -----------------------------------------------------------------------------
-# ---- Initializer Parameters -------------------------------------------------
+# ---- Tracking Parameters ----------------------------------------------------
 # -----------------------------------------------------------------------------
 
-Initializer.num_min_triangulated_pts: 100
+depth_threshold: 0.3
 
 # -----------------------------------------------------------------------------
 # ---- Viewer Parameters ------------------------------------------------------
