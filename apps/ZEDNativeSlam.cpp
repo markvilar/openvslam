@@ -75,12 +75,12 @@ void stereo_tracking(
 	initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
 	initParameters.coordinate_units = sl::UNIT::METER;
 	initParameters.depth_minimum_distance = 0.3;
-	initParameters.depth_maximum_distance = 1.5;
+	initParameters.depth_maximum_distance = 4.0;
 
 	// RuntimeParameters.
 	sl::RuntimeParameters runtimeParameters;
-	runtimeParameters.confidence_threshold = 50;
-	runtimeParameters.texture_confidence_threshold = 50;
+	runtimeParameters.confidence_threshold = 100;
+	runtimeParameters.texture_confidence_threshold = 100;
 	
 	auto zedState = zed.open(initParameters);
 	if (zedState != sl::ERROR_CODE::SUCCESS)
@@ -131,7 +131,7 @@ void stereo_tracking(
 			{
 				// Get ZED data.
 				zed.retrieveImage(leftImageSl, 
-					sl::VIEW::LEFT, sl::MEM::CPU);
+					sl::VIEW::LEFT_GRAY, sl::MEM::CPU);
 				zed.retrieveMeasure(depthMapSl, 
 					sl::MEASURE::DEPTH, sl::MEM::CPU);
 				tsPrev = tsNow.getNanoseconds();
