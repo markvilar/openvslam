@@ -154,6 +154,8 @@ void stereo_tracking(
 						- tsPrev.getMicroseconds()) 
 						/ double(1e6);
 				}
+
+				// TODO: Add mask?
 				SLAM.feed_stereo_frame(leftImageRect, 
 					rightImageRect, dt);
 			}
