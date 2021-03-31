@@ -8,8 +8,6 @@ else()
     message(STATUS "Viewer for examples: None")
 endif()
 
-set(ZED_CXX_FLAGS "")
-
 # -----------------------------------------------------------------------------
 # ---- Dependencies -----------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -69,30 +67,12 @@ endif()
 # ---- Executable -------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-add_executable(ZEDRgbdSlam ZEDRgbdSlam.cpp)
-target_include_directories(ZEDRgbdSlam PUBLIC 
-	${CUDA_INCLUDE_DIRS}
-	${ZED_INCLUDE_DIRS}
-	${popl_INCLUDE_DIR})
-target_compile_features(ZEDRgbdSlam PRIVATE cxx_std_17 ${ZED_CXX_FLAGS})
-target_link_libraries(ZEDRgbdSlam PRIVATE 
-	${PROJECT_NAME} 
-	${ZED_LIBS} 
-	${CUDA_LIBRARIES}
-	opencv_imgcodecs
-	opencv_videoio)
-
-if(USE_PANGOLIN_VIEWER)
-        target_compile_definitions(ZEDRgbdSlam PRIVATE USE_PANGOLIN_VIEWER)
-        target_link_libraries(ZEDRgbdSlam PRIVATE pangolin_viewer)
-endif()
-
 add_executable(ZEDStereoSlam ZEDStereoSlam.cpp)
 target_include_directories(ZEDStereoSlam PUBLIC 
 	${CUDA_INCLUDE_DIRS}
 	${ZED_INCLUDE_DIRS}
 	${popl_INCLUDE_DIR})
-target_compile_features(ZEDStereoSlam PRIVATE cxx_std_17 ${ZED_CXX_FLAGS})
+target_compile_features(ZEDStereoSlam PRIVATE cxx_std_17)
 target_link_libraries(ZEDStereoSlam PRIVATE 
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
@@ -101,7 +81,8 @@ target_link_libraries(ZEDStereoSlam PRIVATE
 	opencv_videoio)
 
 if(USE_PANGOLIN_VIEWER)
-        target_compile_definitions(ZEDStereoSlam PRIVATE USE_PANGOLIN_VIEWER)
-        target_link_libraries(ZEDStereoSlam PRIVATE pangolin_viewer)
+	message(STATUS "Using Pangolin viewer in ZED slam. ")
+    target_compile_definitions(ZEDStereoSlam PRIVATE USE_PANGOLIN_VIEWER)
+    target_link_libraries(ZEDStereoSlam PRIVATE pangolin_viewer)
 endif()
 
