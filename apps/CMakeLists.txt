@@ -67,13 +67,17 @@ endif()
 # ---- Executable -------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-add_executable(ZEDStereoSlam ZEDStereoSlam.cpp)
-target_include_directories(ZEDStereoSlam PUBLIC 
+add_executable(ZEDSlam ZEDSlam.cpp 
+    Application.hpp
+    Configuration.hpp
+    Utilities.hpp)
+
+target_include_directories(ZEDSlam PUBLIC 
 	${CUDA_INCLUDE_DIRS}
 	${ZED_INCLUDE_DIRS}
 	${popl_INCLUDE_DIR})
-target_compile_features(ZEDStereoSlam PRIVATE cxx_std_17)
-target_link_libraries(ZEDStereoSlam PRIVATE 
+target_compile_features(ZEDSlam PRIVATE cxx_std_17)
+target_link_libraries(ZEDSlam PRIVATE 
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
 	${CUDA_LIBRARIES}
@@ -82,7 +86,7 @@ target_link_libraries(ZEDStereoSlam PRIVATE
 
 if(USE_PANGOLIN_VIEWER)
 	message(STATUS "Using Pangolin viewer in ZED slam. ")
-    target_compile_definitions(ZEDStereoSlam PRIVATE USE_PANGOLIN_VIEWER)
-    target_link_libraries(ZEDStereoSlam PRIVATE pangolin_viewer)
+    target_compile_definitions(ZEDSlam PRIVATE USE_PANGOLIN_VIEWER)
+    target_link_libraries(ZEDSlam PRIVATE pangolin_viewer)
 endif()
 

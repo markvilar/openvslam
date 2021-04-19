@@ -14,6 +14,10 @@ void convert_to_true_depth(cv::Mat& img, const double depthmap_factor);
 
 void equalize_histogram(cv::Mat& img);
 
+void histogram_equalization(cv::Mat& src, cv::Mat& dst);
+
+void clahe(cv::Mat& src, cv::Mat& dst, double clip_limit, cv::Size grid_size);
+
 } // namespace util
 } // namespace openvslam
 

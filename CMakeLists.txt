@@ -186,7 +186,7 @@ set(INCLUDES_DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 # -----------------------------------------------------------------------------
 
 # Third-party.
-add_subdirectory(3rd)
+#add_subdirectory(3rd)
 
 # Library.
 add_subdirectory(src)
