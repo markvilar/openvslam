@@ -18,8 +18,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # -----------------------------------------------------------------------------
 
 option(BUILD_APPLICATIONS   "Build applications."      ON)
-option(BUILD_EXAMPLES       "Build examples."          ON)
-option(BUILD_TESTS          "Build tests."             ON)
+option(BUILD_EXAMPLES       "Build examples."          OFF)
+option(BUILD_TESTS          "Build tests."             OFF)
 option(USE_PANGOLIN_VIEWER  "Enable Pangolin Viewer."  ON)
 option(USE_SOCKET_PUBLISHER "Enable Socket Publisher." OFF)
 

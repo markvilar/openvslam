@@ -67,17 +67,22 @@ endif()
 # ---- Executable -------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-add_executable(ZEDSlam ZEDSlam.cpp 
+add_executable(SlamApplication SlamApplication.cpp 
     Application.hpp
-    Configuration.hpp
-    Utilities.hpp)
+    Application.cpp
+    ApplicationConfiguration.hpp
+    ApplicationConfiguration.cpp
+    ImageProcessing.hpp
+    ImageProcessing.cpp
+    Utilities.hpp
+    Utilities.cpp)
 
-target_include_directories(ZEDSlam PUBLIC 
+target_include_directories(SlamApplication PUBLIC 
 	${CUDA_INCLUDE_DIRS}
 	${ZED_INCLUDE_DIRS}
 	${popl_INCLUDE_DIR})
-target_compile_features(ZEDSlam PRIVATE cxx_std_17)
-target_link_libraries(ZEDSlam PRIVATE 
+target_compile_features(SlamApplication PRIVATE cxx_std_17)
+target_link_libraries(SlamApplication PRIVATE 
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
 	${CUDA_LIBRARIES}
@@ -85,8 +90,7 @@ target_link_libraries(ZEDSlam PRIVATE
 	opencv_videoio)
 
 if(USE_PANGOLIN_VIEWER)
-	message(STATUS "Using Pangolin viewer in ZED slam. ")
-    target_compile_definitions(ZEDSlam PRIVATE USE_PANGOLIN_VIEWER)
-    target_link_libraries(ZEDSlam PRIVATE pangolin_viewer)
+	message(STATUS "Using Pangolin viewer in SLAM application. ")
+    target_compile_definitions(SlamApplication PRIVATE USE_PANGOLIN_VIEWER)
+    target_link_libraries(SlamApplication PRIVATE pangolin_viewer)
 endif()
-

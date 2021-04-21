@@ -1,5 +1,12 @@
-gdb --args /home/martin/dev/openvslam/build/apps/ZEDStereoSlam                \
-    -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2 \
-    -s /home/martin/data/ekne-survey/zed-svo/Ekne-01.svo                      \
-    -c /home/martin/dev/openvslam/configurations/zed/perspective-water.yaml   \
-    --frame-start 1000 --eval-log --debug-mode
+gdb --args                                                                     \
+    /home/martin/dev/openvslam/build/apps/SlamApplication                      \
+    -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2  \
+    -c /home/martin/dev/openvslam/configurations/zed/water-perspective-01.yaml \
+    -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo                           \
+    --map /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/map.msg         \
+    --frame /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/ft.txt        \
+    --keyframe /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/kft.txt   \
+    --track-times /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/tt.txt  \
+    --frame-skip 1                                                             \
+    --frame-start 2500                                                         \
+    --eval-log
