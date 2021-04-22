@@ -21,7 +21,7 @@ public:
      * Constructor
      */
     map_database_io(data::camera_database* cam_db, data::map_database* map_db,
-                    data::bow_database* bow_db, data::bow_vocabulary* bow_vocab);
+        data::bow_database* bow_db, data::bow_vocabulary* bow_vocab);
 
     /**
      * Destructor
