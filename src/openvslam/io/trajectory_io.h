@@ -11,7 +11,8 @@ class map_database;
 
 namespace io {
 
-class trajectory_io {
+class trajectory_io 
+{
 public:
     /**
      * Constructor
@@ -26,12 +27,14 @@ public:
     /**
      * Save the frame trajectory in the specified format
      */
-    void save_frame_trajectory(const std::string& path, const std::string& format) const;
+    void save_frame_trajectory(const std::string& path, 
+        const std::string& format) const;
 
     /**
      * Save the keyframe trajectory in the specified format
      */
-    void save_keyframe_trajectory(const std::string& path, const std::string& format) const;
+    void save_keyframe_trajectory(const std::string& path, 
+        const std::string& format) const;
 
 private:
     //! map_database

@@ -3,10 +3,10 @@ gdb --args                                                                     \
     -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2  \
     -c /home/martin/dev/openvslam/configurations/zed/water-perspective-01.yaml \
     -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo                           \
-    --map /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/map.msg         \
-    --frame /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/ft.txt        \
-    --keyframe /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/kft.txt   \
-    --track-times /home/martin/data/Ekne-Survey/SLAM-Output/Segment-01/tt.txt  \
+    --map /home/martin/data/Ekne-Survey/SLAM-Output/Debug/map.msg              \
+    --frame /home/martin/data/Ekne-Survey/SLAM-Output/Debug/ft.txt             \
+    --keyframe /home/martin/data/Ekne-Survey/SLAM-Output/Debug/kft.txt         \
+    --track-times /home/martin/data/Ekne-Survey/SLAM-Output/Debug/tt.txt       \
     --frame-skip 1                                                             \
     --frame-start 2500                                                         \
     --eval-log

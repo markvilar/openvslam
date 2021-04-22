@@ -42,9 +42,9 @@ void Application::Run()
 	if (m_Configuration.Evaluate) 
 	{
 		m_System->save_frame_trajectory(m_Configuration.FrameTrajectoryPath, 
-            "TUM");
+            "Default");
 		m_System->save_keyframe_trajectory(
-            m_Configuration.KeyframeTrajectoryPath, "TUM");
+            m_Configuration.KeyframeTrajectoryPath, "Default");
 
 		std::ofstream ofs(m_Configuration.TrackTimesPath, std::ios::out);
 		if (ofs.is_open()) 
@@ -67,31 +67,29 @@ void Application::Run()
 void Application::TrackFrames()
 {
 	// InitParameters - Open SVO file.
-	sl::Camera zed;
+	sl::Camera camera;
 	sl::InitParameters initParameters;
 	initParameters.input.setFromSVOFile(m_Configuration.SVOPath.c_str());
 	initParameters.svo_real_time_mode = m_Configuration.Realtime;
 
-	auto zedState= zed.open(initParameters);
-	if (zedState != sl::ERROR_CODE::SUCCESS)
+	auto cameraState= camera.open(initParameters);
+	if (cameraState != sl::ERROR_CODE::SUCCESS)
 	{
-		std::cerr << toString(zedState) << ": " << toVerbose(zedState) 
+		std::cerr << toString(cameraState) << ": " << toVerbose(cameraState) 
             << std::endl;
 		return;
 	}
 
     // Frame information.
-	unsigned int framesTotal = zed.getSVONumberOfFrames();
+	unsigned int framesTotal = camera.getSVONumberOfFrames();
 	unsigned int frame = m_Configuration.FrameStart;
+    double timestamp = 0.0;
+    double fps = camera.getInitParameters().camera_fps;
     m_TrackTimes = std::make_shared<std::vector<float>>(framesTotal, 0.0);
-
-    // TODO: Invalid FPS.
-	int fps = zed.getInitParameters().camera_fps;
-	double timestep = 1.0f / double(fps);
 
 	if (m_Configuration.FrameStart < framesTotal)
 	{
-		zed.setSVOPosition(m_Configuration.FrameStart);
+		camera.setSVOPosition(m_Configuration.FrameStart);
 	}
 	else
 	{
@@ -105,52 +103,53 @@ void Application::TrackFrames()
 		return;
 	}
 
-	sl::Timestamp previousTimestamp, currentTimestamp;
-	sl::Mat rawLeftImage, rawRightImage;
-	cv::Mat leftImage, rightImage;
+    // Allocate images.
+	sl::Mat nativeLeftImage, nativeRightImage;
+	cv::Mat unprocessedLeftImage, unprocessedRightImage;
     cv::Mat processedLeftImage, processedRightImage;
 	cv::Mat rectifiedLeftImage, rectifiedRightImage;
 
 	while (frame < framesTotal - 1) 
 	{
-        zedState = zed.grab();
-        if (zedState != sl::ERROR_CODE::SUCCESS)
+        cameraState = camera.grab();
+        if (cameraState != sl::ERROR_CODE::SUCCESS)
         {
             continue;
         }
         
-        frame += m_Configuration.FrameSkip;
+        frame++;
 
         // Retrieve grayscale images.
-        zed.retrieveImage(rawLeftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
+        camera.retrieveImage(nativeLeftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
             sl::MEM::CPU);
-        zed.retrieveImage(rawRightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
+        camera.retrieveImage(nativeRightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
             sl::MEM::CPU);
 
         // Convert to OpenCV.
-        leftImage = StereolabsToOpenCV(rawLeftImage);
-        rightImage = StereolabsToOpenCV(rawRightImage);
+        unprocessedLeftImage = StereolabsToOpenCV(nativeLeftImage);
+        unprocessedRightImage = StereolabsToOpenCV(nativeRightImage);
 
         // Extract images and process.
         if (m_Configuration.Preprocessing 
             == ImagePreprocessingType::HistogramEqualization) 
         {
             // Equalize image histograms.
-            openvslam::util::histogram_equalization(leftImage, 
+            openvslam::util::histogram_equalization(unprocessedLeftImage, 
                 processedLeftImage);
-            openvslam::util::histogram_equalization(rightImage,
+            openvslam::util::histogram_equalization(unprocessedRightImage,
                 processedRightImage);
         }
         else if (m_Configuration.Preprocessing == ImagePreprocessingType::CLAHE)
         {
-            openvslam::util::clahe(leftImage, processedLeftImage, 1, { 8, 8 });
-            openvslam::util::clahe(rightImage, processedRightImage, 1, 
-                { 8, 8 });
+            openvslam::util::clahe(unprocessedLeftImage, processedLeftImage, 
+                2.0, { 8, 8 });
+            openvslam::util::clahe(unprocessedRightImage, processedRightImage, 
+                2.0, { 8, 8 });
         }
         else
         {
-            processedLeftImage = leftImage;
-            processedRightImage = rightImage;
+            processedLeftImage = unprocessedLeftImage;
+            processedRightImage = unprocessedRightImage;
         }
 
         if (processedLeftImage.empty() || processedRightImage.empty()) 
@@ -161,30 +160,21 @@ void Application::TrackFrames()
         m_Rectifier.rectify(processedLeftImage, processedRightImage, 
             rectifiedLeftImage, rectifiedRightImage);
 
-        const auto tp_1 = std::chrono::steady_clock::now();
-
-        // Get timestamps.
-        previousTimestamp = currentTimestamp.getNanoseconds();
-        currentTimestamp = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+        const auto trackStart = std::chrono::steady_clock::now();
 
         if (frame % m_Configuration.FrameSkip == 0) 
         {
-            if (previousTimestamp.getMilliseconds() != 0)
-            {
-                timestep = double(currentTimestamp.getMilliseconds() 
-                    - previousTimestamp.getMilliseconds()) 
-                    / double(1000);
-            }
+            timestamp = camera.getTimestamp(sl::TIME_REFERENCE::IMAGE)
+                .getMilliseconds() / double(1000);
 
             m_System->feed_stereo_frame(rectifiedLeftImage, 
-                rectifiedRightImage, timestep);
+                rectifiedRightImage, timestamp);
         }
 
-        const auto tp_2 = std::chrono::steady_clock::now();
+        const auto trackEnd= std::chrono::steady_clock::now();
 
-        const auto trackTime = 
-            std::chrono::duration_cast<std::chrono::duration<double>>(
-            tp_2 - tp_1).count();
+        const auto trackTime = std::chrono::duration_cast
+            <std::chrono::duration<double>>(trackEnd - trackStart).count();
         if (frame % m_Configuration.FrameSkip == 0) 
         {
             m_TrackTimes->insert(m_TrackTimes->begin() + frame, trackTime);
