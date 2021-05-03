@@ -58,9 +58,10 @@ endif()
 # ---- Set options for debugging ----------------------------------------------
 # -----------------------------------------------------------------------------
 
+
 set(USE_CCACHE ON CACHE BOOL "Use ccache to accelerate build")
 find_program(CCACHE_EXE ccache)
-if(USE_CCACHE AND CCACHE_EXE)
+if(USE_CCACHE AND CCACHE_EXE AND NOT MSVC)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_EXE}")
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CCACHE_EXE}")
     message(STATUS "ccache: Enabled")
@@ -68,6 +69,7 @@ else()
     set(USE_CCACHE OFF)
     message(STATUS "ccache: Disabled")
 endif()
+
 
 set(USE_SANITIZER OFF CACHE BOOL 
 	"Enable Address/Memory sanitizer (set env as ASAN_OPTIONS=detect_leaks=1)")
@@ -124,6 +126,14 @@ endif()
 # Threads
 find_package(Threads REQUIRED)
 
+# OpenMP
+find_package(OpenMP REQUIRED)
+if(NOT TARGET OpenMP::OpenMP_CXX)
+    add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
+    set_property(TARGET OpenMP::OpenMP_CXX
+                 PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
+endif()
+
 # Eigen
 find_package(Eigen3 3.3 REQUIRED)
 
@@ -157,7 +167,7 @@ set(OPENVSLAM_PROJECT_CONFIG
 set(OPENVSLAM_TARGETS_EXPORT_NAME ${PROJECT_NAME}Targets)
 set(OPENVSLAM_CONFIG_INSTALL_DIR lib/cmake/${PROJECT_NAME})
 set(OPENVSLAM_NAMESPACE "${PROJECT_NAME}::")
-set(OPENVSLAM_VERSION 0.0.1)
+set(OPENVSLAM_VERSION 0.1.1)
 
 # Create a version config file
 write_basic_package_version_file(${OPENVSLAM_VERSION_CONFIG}
