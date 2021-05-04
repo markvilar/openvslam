@@ -19,25 +19,33 @@
 
 namespace openvslam {
 
-tracking_module::tracking_module(const std::shared_ptr<config>& cfg, system* system, data::map_database* map_db,
-                                 data::bow_vocabulary* bow_vocab, data::bow_database* bow_db)
-    : cfg_(cfg), camera_(cfg->camera_), system_(system), map_db_(map_db), bow_vocab_(bow_vocab), bow_db_(bow_db),
-      initializer_(cfg->camera_->setup_type_, map_db, bow_db, cfg->yaml_node_),
-      frame_tracker_(camera_, 10), relocalizer_(bow_db_), pose_optimizer_(),
-      keyfrm_inserter_(cfg_->camera_->setup_type_, cfg_->true_depth_thr_, map_db, bow_db, 0, cfg_->camera_->fps_) {
+tracking_module::tracking_module(const std::shared_ptr<config>& cfg, 
+    system* system, data::map_database* map_db,
+    data::bow_vocabulary* bow_vocab, data::bow_database* bow_db)
+    : cfg_(cfg), camera_(cfg->camera_), system_(system), map_db_(map_db), 
+    bow_vocab_(bow_vocab), bow_db_(bow_db), 
+    initializer_(cfg->camera_->setup_type_, map_db, bow_db, cfg->yaml_node_),
+    frame_tracker_(camera_, 10), relocalizer_(bow_db_), pose_optimizer_(),
+    keyfrm_inserter_(cfg_->camera_->setup_type_, cfg_->true_depth_thr_, map_db, 
+        bow_db, 0, cfg_->camera_->fps_) 
+{
     spdlog::debug("CONSTRUCT: tracking_module");
 
     extractor_left_ = new feature::orb_extractor(cfg_->orb_params_);
-    if (camera_->setup_type_ == camera::setup_type_t::Monocular) {
+    if (camera_->setup_type_ == camera::setup_type_t::Monocular) 
+    {
         ini_extractor_left_ = new feature::orb_extractor(cfg_->orb_params_);
-        ini_extractor_left_->set_max_num_keypoints(ini_extractor_left_->get_max_num_keypoints() * 2);
+        ini_extractor_left_->set_max_num_keypoints(
+            ini_extractor_left_->get_max_num_keypoints() * 2);
     }
-    if (camera_->setup_type_ == camera::setup_type_t::Stereo) {
+    if (camera_->setup_type_ == camera::setup_type_t::Stereo) 
+    {
         extractor_right_ = new feature::orb_extractor(cfg_->orb_params_);
     }
 }
 
-tracking_module::~tracking_module() {
+tracking_module::~tracking_module() 
+{
     delete extractor_left_;
     extractor_left_ = nullptr;
     delete extractor_right_;
@@ -48,34 +56,43 @@ tracking_module::~tracking_module() {
     spdlog::debug("DESTRUCT: tracking_module");
 }
 
-void tracking_module::set_mapping_module(mapping_module* mapper) {
+void tracking_module::set_mapping_module(mapping_module* mapper) 
+{
     mapper_ = mapper;
     keyfrm_inserter_.set_mapping_module(mapper);
 }
 
-void tracking_module::set_global_optimization_module(global_optimization_module* global_optimizer) {
+void tracking_module::set_global_optimization_module(
+    global_optimization_module* global_optimizer) 
+{
     global_optimizer_ = global_optimizer;
 }
 
-void tracking_module::set_mapping_module_status(const bool mapping_is_enabled) {
+void tracking_module::set_mapping_module_status(const bool mapping_is_enabled) 
+{
     std::lock_guard<std::mutex> lock(mtx_mapping_);
     mapping_is_enabled_ = mapping_is_enabled;
 }
 
-bool tracking_module::get_mapping_module_status() const {
+bool tracking_module::get_mapping_module_status() const 
+{
     std::lock_guard<std::mutex> lock(mtx_mapping_);
     return mapping_is_enabled_;
 }
 
-std::vector<cv::KeyPoint> tracking_module::get_initial_keypoints() const {
+std::vector<cv::KeyPoint> tracking_module::get_initial_keypoints() const 
+{
     return initializer_.get_initial_keypoints();
 }
 
-std::vector<int> tracking_module::get_initial_matches() const {
+std::vector<int> tracking_module::get_initial_matches() const 
+{
     return initializer_.get_initial_matches();
 }
 
-Mat44_t tracking_module::track_monocular_image(const cv::Mat& img, const double timestamp, const cv::Mat& mask) {
+Mat44_t tracking_module::track_monocular_image(const cv::Mat& img, 
+    const double timestamp, const cv::Mat& mask) 
+{
     const auto start = std::chrono::system_clock::now();
 
     // color conversion
@@ -83,22 +100,30 @@ Mat44_t tracking_module::track_monocular_image(const cv::Mat& img, const double 
     util::convert_to_grayscale(img_gray_, camera_->color_order_);
 
     // create current frame object
-    if (tracking_state_ == tracker_state_t::NotInitialized || tracking_state_ == tracker_state_t::Initializing) {
-        curr_frm_ = data::frame(img_gray_, timestamp, ini_extractor_left_, bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
+    if (tracking_state_ == tracker_state_t::NotInitialized 
+        || tracking_state_ == tracker_state_t::Initializing) 
+    {
+        curr_frm_ = data::frame(img_gray_, timestamp, ini_extractor_left_, 
+            bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
     }
-    else {
-        curr_frm_ = data::frame(img_gray_, timestamp, extractor_left_, bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
+    else 
+    {
+        curr_frm_ = data::frame(img_gray_, timestamp, extractor_left_, 
+            bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
     }
 
     track();
 
     const auto end = std::chrono::system_clock::now();
-    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end - start).count();
 
     return curr_frm_.cam_pose_cw_;
 }
 
-Mat44_t tracking_module::track_stereo_image(const cv::Mat& left_img_rect, const cv::Mat& right_img_rect, const double timestamp, const cv::Mat& mask) {
+Mat44_t tracking_module::track_stereo_image(const cv::Mat& left_img_rect, 
+    const cv::Mat& right_img_rect, const double timestamp, const cv::Mat& mask) 
+{
     const auto start = std::chrono::system_clock::now();
 
     // color conversion
@@ -108,17 +133,22 @@ Mat44_t tracking_module::track_stereo_image(const cv::Mat& left_img_rect, const 
     util::convert_to_grayscale(right_img_gray, camera_->color_order_);
 
     // create current frame object
-    curr_frm_ = data::frame(img_gray_, right_img_gray, timestamp, extractor_left_, extractor_right_, bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
+    curr_frm_ = data::frame(img_gray_, right_img_gray, timestamp, 
+        extractor_left_, extractor_right_, bow_vocab_, camera_, 
+        cfg_->true_depth_thr_, mask);
 
     track();
 
     const auto end = std::chrono::system_clock::now();
-    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end - start).count();
 
     return curr_frm_.cam_pose_cw_;
 }
 
-Mat44_t tracking_module::track_RGBD_image(const cv::Mat& img, const cv::Mat& depthmap, const double timestamp, const cv::Mat& mask) {
+Mat44_t tracking_module::track_RGBD_image(const cv::Mat& img, 
+    const cv::Mat& depthmap, const double timestamp, const cv::Mat& mask) 
+{
     const auto start = std::chrono::system_clock::now();
 
     // color and depth scale conversion
@@ -128,17 +158,20 @@ Mat44_t tracking_module::track_RGBD_image(const cv::Mat& img, const cv::Mat& dep
     util::convert_to_true_depth(img_depth, cfg_->depthmap_factor_);
 
     // create current frame object
-    curr_frm_ = data::frame(img_gray_, img_depth, timestamp, extractor_left_, bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
+    curr_frm_ = data::frame(img_gray_, img_depth, timestamp, extractor_left_, 
+        bow_vocab_, camera_, cfg_->true_depth_thr_, mask);
 
     track();
 
     const auto end = std::chrono::system_clock::now();
-    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    elapsed_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end - start).count();
 
     return curr_frm_.cam_pose_cw_;
 }
 
-void tracking_module::reset() {
+void tracking_module::reset() 
+{
     spdlog::info("resetting system");
 
     initializer_.reset();
@@ -159,8 +192,10 @@ void tracking_module::reset() {
     tracking_state_ = tracker_state_t::NotInitialized;
 }
 
-void tracking_module::track() {
-    if (tracking_state_ == tracker_state_t::NotInitialized) {
+void tracking_module::track() 
+{
+    if (tracking_state_ == tracker_state_t::NotInitialized) 
+    {
         tracking_state_ = tracker_state_t::Initializing;
     }
 
@@ -168,15 +203,18 @@ void tracking_module::track() {
 
     // check if pause is requested
     check_and_execute_pause();
-    while (is_paused()) {
+    while (is_paused()) 
+    {
         std::this_thread::sleep_for(std::chrono::microseconds(5000));
     }
 
     // LOCK the map database
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
 
-    if (tracking_state_ == tracker_state_t::Initializing) {
-        if (!initialize()) {
+    if (tracking_state_ == tracker_state_t::Initializing) 
+    {
+        if (!initialize()) 
+        {
             return;
         }
 
@@ -185,18 +223,21 @@ void tracking_module::track() {
 
         // pass all of the keyframes to the mapping module
         const auto keyfrms = map_db_->get_all_keyframes();
-        for (const auto keyfrm : keyfrms) {
+        for (const auto keyfrm : keyfrms) 
+        {
             mapper_->queue_keyframe(keyfrm);
         }
 
         // state transition to Tracking mode
         tracking_state_ = tracker_state_t::Tracking;
     }
-    else {
+    else 
+    {
         // apply replace of landmarks observed in the last frame
         apply_landmark_replace();
         // update the camera pose of the last frame
-        // because the mapping module might optimize the camera pose of the last frame's reference keyframe
+        // because the mapping module might optimize the camera pose of the 
+        // last frame's reference keyframe
         update_last_frame();
 
         // set the reference keyframe of the current frame
@@ -205,44 +246,58 @@ void tracking_module::track() {
         auto succeeded = track_current_frame();
 
         // update the local map and optimize the camera pose of the current frame
-        if (succeeded) {
+        if (succeeded) 
+        {
             update_local_map();
             succeeded = optimize_current_frame_with_local_map();
         }
 
         // update the motion model
-        if (succeeded) {
+        if (succeeded) 
+        {
             update_motion_model();
         }
 
         // state transition
-        tracking_state_ = succeeded ? tracker_state_t::Tracking : tracker_state_t::Lost;
+        tracking_state_ = succeeded ? tracker_state_t::Tracking 
+            : tracker_state_t::Lost;
 
         // update the frame statistics
-        map_db_->update_frame_statistics(curr_frm_, tracking_state_ == tracker_state_t::Lost);
+        map_db_->update_frame_statistics(curr_frm_, 
+            tracking_state_ == tracker_state_t::Lost);
 
-        // if tracking is failed within 5.0 sec after initialization, reset the system
+        // if tracking is failed within 5.0 sec after initialization, reset 
+        // the system
         constexpr float init_retry_thr = 5.0;
-        if (tracking_state_ == tracker_state_t::Lost
-            && curr_frm_.id_ - initializer_.get_initial_frame_id() < camera_->fps_ * init_retry_thr) {
-            spdlog::info("tracking lost within {} sec after initialization", init_retry_thr);
+        if (tracking_state_ == tracker_state_t::Lost 
+            && curr_frm_.id_ - initializer_.get_initial_frame_id() 
+            < camera_->fps_ * init_retry_thr) 
+        {
+            spdlog::info("tracking lost within {0} sec after initialization", 
+                init_retry_thr);
             system_->request_reset();
             return;
         }
 
         // show message if tracking has been lost
-        if (last_tracking_state_ != tracker_state_t::Lost && tracking_state_ == tracker_state_t::Lost) {
+        if (last_tracking_state_ != tracker_state_t::Lost 
+            && tracking_state_ == tracker_state_t::Lost) 
+        {
             spdlog::info("tracking lost: frame {}", curr_frm_.id_);
         }
 
         // check to insert the new keyframe derived from the current frame
-        if (succeeded && new_keyframe_is_needed()) {
+        if (succeeded && new_keyframe_is_needed()) 
+        {
             insert_new_keyframe();
         }
 
         // tidy up observations
-        for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) {
-            if (curr_frm_.landmarks_.at(idx) && curr_frm_.outlier_flags_.at(idx)) {
+        for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) 
+        {
+            if (curr_frm_.landmarks_.at(idx) 
+                && curr_frm_.outlier_flags_.at(idx)) 
+            {
                 curr_frm_.landmarks_.at(idx) = nullptr;
             }
         }
@@ -250,27 +305,32 @@ void tracking_module::track() {
 
     // store the relative pose from the reference keyframe to the current frame
     // to update the camera pose at the beginning of the next tracking process
-    if (curr_frm_.cam_pose_cw_is_valid_) {
-        last_cam_pose_from_ref_keyfrm_ = curr_frm_.cam_pose_cw_ * curr_frm_.ref_keyfrm_->get_cam_pose_inv();
+    if (curr_frm_.cam_pose_cw_is_valid_) 
+    {
+        last_cam_pose_from_ref_keyfrm_ = curr_frm_.cam_pose_cw_ 
+            * curr_frm_.ref_keyfrm_->get_cam_pose_inv();
     }
 
     // update last frame
     last_frm_ = curr_frm_;
 }
 
-bool tracking_module::initialize() {
+bool tracking_module::initialize() 
+{
     // try to initialize with the current frame
     initializer_.initialize(curr_frm_);
 
     // if map building was failed -> reset the map database
-    if (initializer_.get_state() == module::initializer_state_t::Wrong) {
+    if (initializer_.get_state() == module::initializer_state_t::Wrong) 
+    {
         // reset
         system_->request_reset();
         return false;
     }
 
     // if initializing was failed -> try to initialize with the next frame
-    if (initializer_.get_state() != module::initializer_state_t::Succeeded) {
+    if (initializer_.get_state() != module::initializer_state_t::Succeeded) 
+    {
         return false;
     }
 
@@ -278,70 +338,93 @@ bool tracking_module::initialize() {
     return true;
 }
 
-bool tracking_module::track_current_frame() {
+bool tracking_module::track_current_frame() 
+{
     bool succeeded = false;
-    if (tracking_state_ == tracker_state_t::Tracking) {
+    if (tracking_state_ == tracker_state_t::Tracking) 
+    {
         // Tracking mode
-        if (velocity_is_valid_ && last_reloc_frm_id_ + 2 < curr_frm_.id_) {
+        if (velocity_is_valid_ && last_reloc_frm_id_ + 2 < curr_frm_.id_) 
+        {
             // if the motion model is valid
-            succeeded = frame_tracker_.motion_based_track(curr_frm_, last_frm_, velocity_);
+            succeeded = frame_tracker_.motion_based_track(curr_frm_, 
+                last_frm_, velocity_);
         }
-        if (!succeeded) {
-            succeeded = frame_tracker_.bow_match_based_track(curr_frm_, last_frm_, ref_keyfrm_);
+        if (!succeeded) 
+        {
+            succeeded = frame_tracker_.bow_match_based_track(curr_frm_, 
+                last_frm_, ref_keyfrm_);
         }
-        if (!succeeded) {
-            succeeded = frame_tracker_.robust_match_based_track(curr_frm_, last_frm_, ref_keyfrm_);
+        if (!succeeded) 
+        {
+            succeeded = frame_tracker_.robust_match_based_track(curr_frm_, 
+                last_frm_, ref_keyfrm_);
         }
     }
-    else {
+    else 
+    {
         // Lost mode
         // try to relocalize
         succeeded = relocalizer_.relocalize(curr_frm_);
-        if (succeeded) {
+        if (succeeded) 
+        {
             last_reloc_frm_id_ = curr_frm_.id_;
         }
     }
     return succeeded;
 }
 
-void tracking_module::update_motion_model() {
-    if (last_frm_.cam_pose_cw_is_valid_) {
+void tracking_module::update_motion_model() 
+{
+    if (last_frm_.cam_pose_cw_is_valid_) 
+    {
         Mat44_t last_frm_cam_pose_wc = Mat44_t::Identity();
         last_frm_cam_pose_wc.block<3, 3>(0, 0) = last_frm_.get_rotation_inv();
         last_frm_cam_pose_wc.block<3, 1>(0, 3) = last_frm_.get_cam_center();
         velocity_is_valid_ = true;
         velocity_ = curr_frm_.cam_pose_cw_ * last_frm_cam_pose_wc;
     }
-    else {
+    else 
+    {
         velocity_is_valid_ = false;
         velocity_ = Mat44_t::Identity();
     }
 }
 
-void tracking_module::apply_landmark_replace() {
-    for (unsigned int idx = 0; idx < last_frm_.num_keypts_; ++idx) {
+void tracking_module::apply_landmark_replace() 
+{
+    for (unsigned int idx = 0; idx < last_frm_.num_keypts_; ++idx) 
+    {
         auto lm = last_frm_.landmarks_.at(idx);
-        if (!lm) {
+        if (!lm) 
+        {
             continue;
         }
 
         auto replaced_lm = lm->get_replaced();
-        if (replaced_lm) {
+        if (replaced_lm) 
+        {
             last_frm_.landmarks_.at(idx) = replaced_lm;
         }
     }
 }
 
-void tracking_module::update_last_frame() {
+void tracking_module::update_last_frame() 
+{
     auto last_ref_keyfrm = last_frm_.ref_keyfrm_;
-    if (!last_ref_keyfrm) {
+    if (!last_ref_keyfrm) 
+    {
         return;
     }
-    last_frm_.set_cam_pose(last_cam_pose_from_ref_keyfrm_ * last_ref_keyfrm->get_cam_pose());
+    
+    last_frm_.set_cam_pose(last_cam_pose_from_ref_keyfrm_ 
+        * last_ref_keyfrm->get_cam_pose());
 }
 
-bool tracking_module::optimize_current_frame_with_local_map() {
-    // acquire more 2D-3D matches by reprojecting the local landmarks to the current frame
+bool tracking_module::optimize_current_frame_with_local_map() 
+{
+    // acquire more 2D-3D matches by reprojecting the local landmarks to the 
+    // current frame
     search_local_landmarks();
 
     // optimize the pose
@@ -349,22 +432,28 @@ bool tracking_module::optimize_current_frame_with_local_map() {
 
     // count up the number of tracked landmarks
     num_tracked_lms_ = 0;
-    for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) {
+    for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) 
+    {
         auto lm = curr_frm_.landmarks_.at(idx);
-        if (!lm) {
+        if (!lm) 
+        {
             continue;
         }
 
-        if (!curr_frm_.outlier_flags_.at(idx)) {
-            // the observation has been considered as inlier in the pose optimization
+        if (!curr_frm_.outlier_flags_.at(idx)) 
+        {
+            // the observation has been considered as inlier in the pose 
+            // optimization
             assert(lm->has_observation());
             // count up
             ++num_tracked_lms_;
             // increment the number of tracked frame
             lm->increase_num_observed();
         }
-        else {
-            // the observation has been considered as outlier in the pose optimization
+        else 
+        {
+            // the observation has been considered as outlier in the pose 
+            // optimization
             // remove the observation
             curr_frm_.landmarks_.at(idx) = nullptr;
         }
@@ -373,28 +462,37 @@ bool tracking_module::optimize_current_frame_with_local_map() {
     constexpr unsigned int num_tracked_lms_thr = 20;
 
     // if recently relocalized, use the more strict threshold
-    if (curr_frm_.id_ < last_reloc_frm_id_ + camera_->fps_ && num_tracked_lms_ < 2 * num_tracked_lms_thr) {
-        spdlog::debug("local map tracking failed: {} matches < {}", num_tracked_lms_, 2 * num_tracked_lms_thr);
+    if (curr_frm_.id_ < last_reloc_frm_id_ + camera_->fps_ 
+        && num_tracked_lms_ < 2 * num_tracked_lms_thr) 
+    {
+        spdlog::debug("local map tracking failed: {0} matches < {1}", 
+            num_tracked_lms_, 2 * num_tracked_lms_thr);
         return false;
     }
 
     // check the threshold of the number of tracked landmarks
-    if (num_tracked_lms_ < num_tracked_lms_thr) {
-        spdlog::debug("local map tracking failed: {} matches < {}", num_tracked_lms_, num_tracked_lms_thr);
+    if (num_tracked_lms_ < num_tracked_lms_thr) 
+    {
+        spdlog::debug("local map tracking failed: {0} matches < {1}", 
+            num_tracked_lms_, num_tracked_lms_thr);
         return false;
     }
 
     return true;
 }
 
-void tracking_module::update_local_map() {
+void tracking_module::update_local_map() 
+{
     // clean landmark associations
-    for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) {
+    for (unsigned int idx = 0; idx < curr_frm_.num_keypts_; ++idx) 
+    {
         auto lm = curr_frm_.landmarks_.at(idx);
-        if (!lm) {
+        if (!lm) 
+        {
             continue;
         }
-        if (lm->will_be_erased()) {
+        if (lm->will_be_erased()) 
+        {
             curr_frm_.landmarks_.at(idx) = nullptr;
             continue;
         }
@@ -402,17 +500,21 @@ void tracking_module::update_local_map() {
 
     // acquire the current local map
     constexpr unsigned int max_num_local_keyfrms = 60;
-    auto local_map_updater = module::local_map_updater(curr_frm_, max_num_local_keyfrms);
-    if (!local_map_updater.acquire_local_map()) {
+    auto local_map_updater = module::local_map_updater(curr_frm_, 
+        max_num_local_keyfrms);
+    if (!local_map_updater.acquire_local_map()) 
+    {
         return;
     }
+
     // update the variables
     local_keyfrms_ = local_map_updater.get_local_keyframes();
     local_landmarks_ = local_map_updater.get_local_landmarks();
     auto nearest_covisibility = local_map_updater.get_nearest_covisibility();
 
     // update the reference keyframe for the current frame
-    if (nearest_covisibility) {
+    if (nearest_covisibility) 
+    {
         ref_keyfrm_ = nearest_covisibility;
         curr_frm_.ref_keyfrm_ = ref_keyfrm_;
     }
@@ -420,13 +522,18 @@ void tracking_module::update_local_map() {
     map_db_->set_local_landmarks(local_landmarks_);
 }
 
-void tracking_module::search_local_landmarks() {
-    // select the landmarks which can be reprojected from the ones observed in the current frame
-    for (auto lm : curr_frm_.landmarks_) {
-        if (!lm) {
+void tracking_module::search_local_landmarks() 
+{
+    // select the landmarks which can be reprojected from the ones observed in 
+    // the current frame
+    for (auto lm : curr_frm_.landmarks_) 
+    {
+        if (!lm) 
+        {
             continue;
         }
-        if (lm->will_be_erased()) {
+        if (lm->will_be_erased()) 
+        {
             continue;
         }
 
@@ -444,17 +551,22 @@ void tracking_module::search_local_landmarks() {
     Vec2_t reproj;
     float x_right;
     unsigned int pred_scale_level;
-    for (auto lm : local_landmarks_) {
-        // avoid the landmarks which cannot be reprojected (== observed in the current frame)
-        if (lm->identifier_in_local_lm_search_ == curr_frm_.id_) {
+    for (auto lm : local_landmarks_) 
+    {
+        // avoid the landmarks which cannot be reprojected (== observed in the 
+        // current frame)
+        if (lm->identifier_in_local_lm_search_ == curr_frm_.id_) 
+        {
             continue;
         }
-        if (lm->will_be_erased()) {
+        if (lm->will_be_erased()) 
+        {
             continue;
         }
 
         // check the observability
-        if (curr_frm_.can_observe(lm, 0.5, reproj, x_right, pred_scale_level)) {
+        if (curr_frm_.can_observe(lm, 0.5, reproj, x_right, pred_scale_level)) 
+        {
             // pass the temporary variables
             lm->reproj_in_tracking_ = reproj;
             lm->x_right_in_tracking_ = x_right;
@@ -468,42 +580,50 @@ void tracking_module::search_local_landmarks() {
 
             found_proj_candidate = true;
         }
-        else {
+        else 
+        {
             // this landmark cannot be reprojected
             lm->is_observable_in_tracking_ = false;
         }
     }
 
-    if (!found_proj_candidate) {
+    if (!found_proj_candidate) 
+    {
         return;
     }
 
-    // acquire more 2D-3D matches by projecting the local landmarks to the current frame
+    // acquire more 2D-3D matches by projecting the local landmarks to the 
+    // current frame
     match::projection projection_matcher(0.8);
-    const float margin = (curr_frm_.id_ < last_reloc_frm_id_ + 2)
-                             ? 20.0
-                             : ((camera_->setup_type_ == camera::setup_type_t::RGBD)
-                                    ? 10.0
-                                    : 5.0);
-    projection_matcher.match_frame_and_landmarks(curr_frm_, local_landmarks_, margin);
+    const float margin = (curr_frm_.id_ < last_reloc_frm_id_ + 2) ? 20.0
+        : ((camera_->setup_type_ == camera::setup_type_t::RGBD) ? 10.0
+        : 5.0);
+    projection_matcher.match_frame_and_landmarks(curr_frm_, local_landmarks_, 
+        margin);
 }
 
-bool tracking_module::new_keyframe_is_needed() const {
-    if (!mapping_is_enabled_) {
+bool tracking_module::new_keyframe_is_needed() const 
+{
+    if (!mapping_is_enabled_) 
+    {
         return false;
     }
 
     // cannnot insert the new keyframe in a second after relocalization
     const auto num_keyfrms = map_db_->get_num_keyframes();
-    if (cfg_->camera_->fps_ < num_keyfrms && curr_frm_.id_ < last_reloc_frm_id_ + cfg_->camera_->fps_) {
+    if (cfg_->camera_->fps_ < num_keyfrms && curr_frm_.id_ 
+        < last_reloc_frm_id_ + cfg_->camera_->fps_) 
+    {
         return false;
     }
 
     // check the new keyframe is needed
-    return keyfrm_inserter_.new_keyframe_is_needed(curr_frm_, num_tracked_lms_, *ref_keyfrm_);
+    return keyfrm_inserter_.new_keyframe_is_needed(curr_frm_, num_tracked_lms_, 
+        *ref_keyfrm_);
 }
 
-void tracking_module::insert_new_keyframe() {
+void tracking_module::insert_new_keyframe() 
+{
     // insert the new keyframe
     const auto ref_keyfrm = keyfrm_inserter_.insert_new_keyframe(curr_frm_);
     // set the reference keyframe with the new keyframe
@@ -511,22 +631,26 @@ void tracking_module::insert_new_keyframe() {
     curr_frm_.ref_keyfrm_ = ref_keyfrm_;
 }
 
-void tracking_module::request_pause() {
+void tracking_module::request_pause() 
+{
     std::lock_guard<std::mutex> lock1(mtx_pause_);
     pause_is_requested_ = true;
 }
 
-bool tracking_module::pause_is_requested() const {
+bool tracking_module::pause_is_requested() const 
+{
     std::lock_guard<std::mutex> lock(mtx_pause_);
     return pause_is_requested_;
 }
 
-bool tracking_module::is_paused() const {
+bool tracking_module::is_paused() const 
+{
     std::lock_guard<std::mutex> lock(mtx_pause_);
     return is_paused_;
 }
 
-void tracking_module::resume() {
+void tracking_module::resume() 
+{
     std::lock_guard<std::mutex> lock(mtx_pause_);
 
     is_paused_ = false;
@@ -535,14 +659,17 @@ void tracking_module::resume() {
     spdlog::info("resume tracking module");
 }
 
-bool tracking_module::check_and_execute_pause() {
+bool tracking_module::check_and_execute_pause() 
+{
     std::lock_guard<std::mutex> lock(mtx_pause_);
-    if (pause_is_requested_) {
+    if (pause_is_requested_) 
+    {
         is_paused_ = true;
         spdlog::info("pause tracking module");
         return true;
     }
-    else {
+    else 
+    {
         return false;
     }
 }

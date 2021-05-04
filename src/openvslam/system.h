@@ -36,7 +36,8 @@ class frame_publisher;
 class system {
 public:
     //! Constructor
-    system(const std::shared_ptr<config>& cfg, const std::string& vocab_file_path);
+    system(const std::shared_ptr<config>& cfg, 
+        const std::string& vocab_file_path);
 
     //! Destructor
     ~system();
@@ -54,10 +55,12 @@ public:
     // data I/O
 
     //! Save the frame trajectory in the specified format
-    void save_frame_trajectory(const std::string& path, const std::string& format) const;
+    void save_frame_trajectory(const std::string& path, 
+        const std::string& format) const;
 
     //! Save the keyframe trajectory in the specified format
-    void save_keyframe_trajectory(const std::string& path, const std::string& format) const;
+    void save_keyframe_trajectory(const std::string& path, 
+        const std::string& format) const;
 
     //! Load the map database from the MessagePack file
     void load_map_database(const std::string& path) const;
@@ -103,15 +106,19 @@ public:
 
     //! Feed a monocular frame to SLAM system
     //! (NOTE: distorted images are acceptable if calibrated)
-    Mat44_t feed_monocular_frame(const cv::Mat& img, const double timestamp, const cv::Mat& mask = cv::Mat{});
+    Mat44_t feed_monocular_frame(const cv::Mat& img, const double timestamp, 
+        const cv::Mat& mask = cv::Mat{});
 
     //! Feed a stereo frame to SLAM system
     //! (Note: Left and Right images must be stereo-rectified)
-    Mat44_t feed_stereo_frame(const cv::Mat& left_img, const cv::Mat& right_img, const double timestamp, const cv::Mat& mask = cv::Mat{});
+    Mat44_t feed_stereo_frame(const cv::Mat& left_img, 
+        const cv::Mat& right_img, const double timestamp, 
+        const cv::Mat& mask = cv::Mat{});
 
     //! Feed an RGBD frame to SLAM system
     //! (Note: RGB and Depth images must be aligned)
-    Mat44_t feed_RGBD_frame(const cv::Mat& rgb_img, const cv::Mat& depthmap, const double timestamp, const cv::Mat& mask = cv::Mat{});
+    Mat44_t feed_RGBD_frame(const cv::Mat& rgb_img, const cv::Mat& depthmap, 
+        const double timestamp, const cv::Mat& mask = cv::Mat{});
 
     //-----------------------------------------
     // management for pause
