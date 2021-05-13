@@ -54,8 +54,8 @@ StereoRectifier.R_right: [
 Feature.max_num_keypoints: 1000
 Feature.scale_factor: 1.2
 Feature.num_levels: 8
-Feature.ini_fast_threshold: 10
-Feature.min_fast_threshold: 1
+Feature.ini_fast_threshold: 20
+Feature.min_fast_threshold: 10
 
 # -----------------------------------------------------------------------------
 # ---- Depth threshold --------------------------------------------------------

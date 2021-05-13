@@ -170,7 +170,7 @@ void system::shutdown()
 }
 
 void system::save_frame_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const io::trajectory_format format) const 
 {
     pause_other_threads();
     io::trajectory_io trajectory_io(map_db_);
@@ -179,7 +179,7 @@ void system::save_frame_trajectory(const std::string& path,
 }
 
 void system::save_keyframe_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const io::trajectory_format format) const 
 {
     pause_other_threads();
     io::trajectory_io trajectory_io(map_db_);

@@ -42,13 +42,15 @@ void Application::Run()
 	if (m_Configuration.Evaluate) 
 	{
 		m_System->save_frame_trajectory(m_Configuration.FrameTrajectoryPath, 
-            "Default");
+            openvslam::io::trajectory_format::csv);
 		m_System->save_keyframe_trajectory(
-            m_Configuration.KeyframeTrajectoryPath, "Default");
+            m_Configuration.KeyframeTrajectoryPath, 
+            openvslam::io::trajectory_format::csv);
 
 		std::ofstream ofs(m_Configuration.TrackTimesPath, std::ios::out);
 		if (ofs.is_open()) 
 		{
+            ofs << "Track-Time" << std::endl;
 			for (const auto trackTime : *m_TrackTimes) 
 			{
 				ofs << trackTime << std::endl;
@@ -142,14 +144,22 @@ void Application::TrackFrames()
         else if (m_Configuration.Preprocessing == ImagePreprocessingType::CLAHE)
         {
             openvslam::util::clahe(unprocessedLeftImage, processedLeftImage, 
-                2.0, { 8, 8 });
+                m_Configuration.CLAHEClip, 
+                { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
             openvslam::util::clahe(unprocessedRightImage, processedRightImage, 
-                2.0, { 8, 8 });
+                m_Configuration.CLAHEClip, 
+                { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
         }
         else
         {
             processedLeftImage = unprocessedLeftImage;
             processedRightImage = unprocessedRightImage;
+        }
+
+        // TODO: Add lowpass filter option.
+        if (true)
+        {
+            p
         }
 
         if (processedLeftImage.empty() || processedRightImage.empty()) 
@@ -165,7 +175,7 @@ void Application::TrackFrames()
         if (frame % m_Configuration.FrameSkip == 0) 
         {
             timestamp = camera.getTimestamp(sl::TIME_REFERENCE::IMAGE)
-                .getMilliseconds() / double(1000);
+                .getMilliseconds() / double(1000) + m_Configuration.Bias;
 
             m_System->feed_stereo_frame(rectifiedLeftImage, 
                 rectifiedRightImage, timestamp);

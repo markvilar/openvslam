@@ -3,13 +3,23 @@
 
 #include <string>
 
-namespace openvslam {
+namespace openvslam 
+{
 
-namespace data {
-class map_database;
+namespace data 
+{
+    class map_database;
 } // namespace data
 
-namespace io {
+namespace io 
+{
+
+enum class trajectory_format
+{
+    csv = 0,
+    kitti   = 1,
+    tum     = 2
+};
 
 class trajectory_io 
 {
@@ -28,13 +38,13 @@ public:
      * Save the frame trajectory in the specified format
      */
     void save_frame_trajectory(const std::string& path, 
-        const std::string& format) const;
+        const trajectory_format format) const;
 
     /**
      * Save the keyframe trajectory in the specified format
      */
     void save_keyframe_trajectory(const std::string& path, 
-        const std::string& format) const;
+        const trajectory_format format) const;
 
 private:
     //! map_database

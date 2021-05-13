@@ -26,7 +26,12 @@ public:
     bool Debug = false;
     bool Evaluate = false;
 
+    double Bias = 0.0f;
+
     ImagePreprocessingType Preprocessing = ImagePreprocessingType::None;
+
+    double CLAHEClip = 0.0f;
+    int CLAHESize = 0;
 
     std::shared_ptr<openvslam::config> OpenVSLAMConfiguration;
 };
