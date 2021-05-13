@@ -1,6 +1,7 @@
 #include "openvslam/camera/perspective.h"
 #include "openvslam/camera/fisheye.h"
 #include "openvslam/camera/equirectangular.h"
+#include "openvslam/camera/radial_division.h"
 #include "openvslam/data/common.h"
 #include "openvslam/data/frame.h"
 #include "openvslam/data/keyframe.h"
@@ -134,6 +135,17 @@ void frame::set_cam_pose(const g2o::SE3Quat& cam_pose_cw) {
     set_cam_pose(util::converter::to_eigen_mat(cam_pose_cw));
 }
 
+Mat44_t frame::get_cam_pose() const {
+    return cam_pose_cw_;
+}
+
+Mat44_t frame::get_cam_pose_inv() const {
+    Mat44_t cam_pose_wc = Mat44_t::Identity();
+    cam_pose_wc.block<3, 3>(0, 0) = rot_wc_;
+    cam_pose_wc.block<3, 1>(0, 3) = cam_center_;
+    return cam_pose_wc;
+}
+
 void frame::update_pose_params() {
     rot_cw_ = cam_pose_cw_.block<3, 3>(0, 0);
     rot_wc_ = rot_cw_.transpose();
@@ -240,6 +252,24 @@ Vec3_t frame::triangulate_stereo(const unsigned int idx) const {
         }
         case camera::model_type_t::Equirectangular: {
             throw std::runtime_error("Not implemented: Stereo or RGBD of equirectangular camera model");
+        }
+        case camera::model_type_t::RadialDivision: {
+            auto camera = static_cast<camera::radial_division*>(camera_);
+
+            const float depth = depths_.at(idx);
+            if (0.0 < depth) {
+                const float x = keypts_.at(idx).pt.x;
+                const float y = keypts_.at(idx).pt.y;
+                const float unproj_x = (x - camera->cx_) * depth * camera->fx_inv_;
+                const float unproj_y = (y - camera->cy_) * depth * camera->fy_inv_;
+                const Vec3_t pos_c{unproj_x, unproj_y, depth};
+
+                // camera座標 -> world座標
+                return rot_wc_ * pos_c + cam_center_;
+            }
+            else {
+                return Vec3_t::Zero();
+            }
         }
     }
 
