@@ -159,7 +159,6 @@ void Application::TrackFrames()
         // TODO: Add lowpass filter option.
         if (true)
         {
-            p
         }
 
         if (processedLeftImage.empty() || processedRightImage.empty()) 

@@ -1,12 +1,11 @@
 <p align="center">
-<img src="https://raw.githubusercontent.com/xdspacelab/openvslam/master/docs/img/logo.png" width="435px">
+<img src="https://raw.githubusercontent.com/OpenVSLAM-Community/openvslam/main/docs/img/logo.png" width="435px">
 </p>
 
 # OpenVSLAM: A Versatile Visual SLAM Framework
 [![Wercker Status](https://app.wercker.com/status/402b9e7a1fae92493519fff03d513565/s/main "wercker status")](https://app.wercker.com/ymd-stella/openvslam/runs)
 [![Documentation Status](https://readthedocs.org/projects/openvslam-community/badge/?version=latest)](https://openvslam-community.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/openvslam)
 
 ---
 
@@ -16,9 +15,9 @@
 
 ## Overview
 
-[<img src="https://raw.githubusercontent.com/xdspacelab/openvslam/master/docs/img/teaser.png" width="640px">](https://arxiv.org/abs/1910.01122)
+[<img src="https://raw.githubusercontent.com/OpenVSLAM-Community/openvslam/main/docs/img/teaser.png" width="640px">](https://arxiv.org/abs/1910.01122)
 
-[<img src="https://raw.githubusercontent.com/wiki/xdspacelab/openvslam/media/tracking.gif" width="640px">](https://www.youtube.com/watch?v=Ro_s3Lbx5ms)
+[<img src="https://j.gifs.com/81m1QL.gif" width="640px">]
 
 [**[PrePrint]**](https://arxiv.org/abs/1910.01122) [**[YouTube]**](https://www.youtube.com/watch?v=Ro_s3Lbx5ms)
 
@@ -40,8 +39,7 @@ You can employ these snippets for in your own programs.
 Please see the `*.cc` files in `./example` directory or check [Simple Tutorial](https://openvslam-community.readthedocs.io/en/master/simple_tutorial.html) and [Example](https://openvslam-community.readthedocs.io/en/master/example.html).
 
 We provided [documentation](https://openvslam-community.readthedocs.io/) for installation and tutorial.
-Please contact us via [GitHub issues](https://github.com/xdspacelab/openvslam/issues) if you have any questions or notice any bugs about the software.
-
+The repository for the ROS wrapper is [openvslam_ros](https://github.com/OpenVSLAM-Community/openvslam_ros).
 ## Motivation
 
 Visual SLAM is regarded as a next-generation technology for supporting industries such as automotives, robotics, and xR. 
@@ -58,16 +56,14 @@ Please see [**Installation**](https://openvslam-community.readthedocs.io/en/mast
 
 Please see [**Simple Tutorial**](https://openvslam-community.readthedocs.io/en/master/simple_tutorial.html) chapter in the [documentation](https://openvslam-community.readthedocs.io/).
 
-A sample ORB vocabulary file can be downloaded from [here](https://drive.google.com/open?id=1wUPb328th8bUqhOk-i8xllt5mgRW4n84).
+A sample ORB vocabulary file can be downloaded from [here](https://github.com/OpenVSLAM-Community/FBoW_orb_vocab/raw/main/orb_vocab.fbow).
 Sample datasets are also provided at [here](https://drive.google.com/open?id=1A_gq8LYuENePhNHsuscLZQPhbJJwzAq4).
 
 If you would like to run visual SLAM with standard benchmarking datasets (e.g. KITTI Odometry dataset), please see [**SLAM with standard datasets**](https://openvslam-community.readthedocs.io/en/master/example.html#slam-with-standard-datasets) section in the [documentation](https://openvslam-community.readthedocs.io/).
 
 ## Community
 
-If you want to join our Spectrum community, please join from the following link:
-
-[![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/openvslam)
+Please contact us via [GitHub Discussions](https://github.com/OpenVSLAM-Community/openvslam/discussions) if you have any questions or notice any bugs about the software.
 
 ## Currently working on
 
