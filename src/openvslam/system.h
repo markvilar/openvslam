@@ -4,6 +4,8 @@
 #include "openvslam/type.h"
 #include "openvslam/data/bow_vocabulary.h"
 
+#include "openvslam/io/trajectory_io.h"
+
 #include <string>
 #include <thread>
 #include <mutex>
@@ -11,29 +13,34 @@
 
 #include <opencv2/core/core.hpp>
 
-namespace openvslam {
+namespace openvslam 
+{
 
 class config;
 class tracking_module;
 class mapping_module;
 class global_optimization_module;
 
-namespace camera {
-class base;
+namespace camera 
+{
+    class base;
 } // namespace camera
 
-namespace data {
+namespace data 
+{
 class camera_database;
 class map_database;
 class bow_database;
 } // namespace data
 
-namespace publish {
+namespace publish 
+{
 class map_publisher;
 class frame_publisher;
 } // namespace publish
 
-class system {
+class system 
+{
 public:
     //! Constructor
     system(const std::shared_ptr<config>& cfg, 
@@ -56,11 +63,11 @@ public:
 
     //! Save the frame trajectory in the specified format
     void save_frame_trajectory(const std::string& path, 
-        const std::string& format) const;
+        const io::trajectory_format format) const;
 
     //! Save the keyframe trajectory in the specified format
     void save_keyframe_trajectory(const std::string& path, 
-        const std::string& format) const;
+        const io::trajectory_format format) const;
 
     //! Load the map database from the MessagePack file
     void load_map_database(const std::string& path) const;

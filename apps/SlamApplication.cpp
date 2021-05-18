@@ -47,9 +47,17 @@ int main(int argc, char* argv[])
 	auto optionEvaluate = options.add<popl::Switch>(
         "", "eval-log", "Store trajectory and tracking times.");
 
+    auto optionBias = options.add<popl::Value<double>>(
+        "", "bias", "Constant time bias.", 0.0);
+
 	auto optionPreprocessing = options.add<popl::Value<int>>(
         "", "preprocessing", "Image preprocessing method.", 0);
-    
+
+    auto optionCLAHEClip = options.add<popl::Value<double>>(
+        "", "clahe-clip", "CLAHE clip value.", 8.0);
+    auto optionCLAHESize= options.add<popl::Value<unsigned int>>(
+        "", "clahe-size", "CLAHE clip value.", 40);
+   
     // Parse arguments.
     try 
 	{
@@ -113,9 +121,16 @@ int main(int argc, char* argv[])
     configuration.Debug = optionDebug->value();
     configuration.Evaluate = optionEvaluate->value();
 
+    // Generic values.
+    configuration.Bias = optionBias->value();
+
+    // Preprocessing values.
     configuration.Preprocessing = IntToImagePreprocessingType(
         optionPreprocessing->value());
+    configuration.CLAHEClip = optionCLAHEClip->value();
+    configuration.CLAHESize = optionCLAHESize->value();
 
+    // OpenVSLAM configuration.
     configuration.OpenVSLAMConfiguration = std::make_shared<openvslam::config>(
         optionConfigurationPath->value());
 

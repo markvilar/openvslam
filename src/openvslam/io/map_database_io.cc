@@ -31,7 +31,9 @@ void map_database_io::save_message_pack(const std::string& path)
     nlohmann::json landmarks;
     map_db_->to_json(keyfrms, landmarks);
 
-    nlohmann::json json{ {"cameras", cameras}, {"keyframes", keyfrms},
+    nlohmann::json json{ 
+        {"cameras", cameras}, 
+        {"keyframes", keyfrms},
         {"landmarks", landmarks},
         {"frame_next_id", static_cast<unsigned int>(data::frame::next_id_)},
         {"keyframe_next_id", 

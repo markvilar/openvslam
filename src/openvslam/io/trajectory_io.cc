@@ -10,8 +10,11 @@
 
 #include <fstream>
 
-namespace openvslam {
-namespace io {
+namespace openvslam 
+{
+
+namespace io 
+{
 
 trajectory_io::trajectory_io(data::map_database* map_db)
     : map_db_(map_db) 
@@ -19,7 +22,7 @@ trajectory_io::trajectory_io(data::map_database* map_db)
 }
 
 void trajectory_io::save_frame_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const trajectory_format format) const 
 {
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
 
@@ -50,8 +53,8 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
         throw std::runtime_error("cannot create a file at " + path);
     }
 
-    spdlog::info("dump frame trajectory in \"{0}\" format from frame {1} to "
-        "frame {2} ({3} frames)", format, reference_keyframes.begin()->first, 
+    spdlog::info("Dumping frame trajectory from frame {0} to frame {1} "
+        "({2} frames)", reference_keyframes.begin()->first, 
         reference_keyframes.rbegin()->first, num_valid_frms);
 
     const auto rk_itr_bgn = reference_keyframes.begin();
@@ -63,6 +66,16 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
 
     int offset = rk_itr->first;
     unsigned int prev_frm_id = 0;
+
+    // Write header.
+    if (format == trajectory_format::csv)
+    {
+        ofs << "Timestamp" << "," << "PositionX" << "," << "PositionY" << "," 
+            << "PositionZ" << "," << "QuaternionImaginary1" << "," 
+            << "QuaternionImaginary2" << "," << "QuaternionImaginary3" << "," 
+            << "QuaternionReal" << std::endl;
+    }
+
     for (unsigned int i = 0; i < num_valid_frms; ++i, ++rk_itr, ++rc_itr) 
     {
         // check frame ID
@@ -91,7 +104,7 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
         const Mat44_t cam_pose_cw = rel_cam_pose_cr * cam_pose_rw;
         const Mat44_t cam_pose_wc = cam_pose_cw.inverse();
 
-        if (format == "KITTI") 
+        if (format == trajectory_format::kitti) 
         {
             ofs << std::setprecision(9)
                 << cam_pose_wc(0, 0) << " " << cam_pose_wc(0, 1) << " " 
@@ -101,7 +114,7 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
                 << cam_pose_wc(2, 0) << " " << cam_pose_wc(2, 1) << " " 
                 << cam_pose_wc(2, 2) << " " << cam_pose_wc(2, 3) << std::endl;
         }
-        else if (format == "TUM") 
+        else if (format == trajectory_format::tum) 
         {
             const Mat33_t& rot_wc = cam_pose_wc.block<3, 3>(0, 0);
             const Vec3_t& trans_wc = cam_pose_wc.block<3, 1>(0, 3);
@@ -113,7 +126,7 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
                 << " " << quat_wc.x() << " " << quat_wc.y() << " " 
                 << quat_wc.z() << " " << quat_wc.w() << std::endl;
         }
-        else if (format == "Default")
+        else if (format == trajectory_format::csv)
         {
             const Mat33_t& rot_wc = cam_pose_wc.block<3, 3>(0, 0);
             const Vec3_t& trans_wc = cam_pose_wc.block<3, 1>(0, 3);
@@ -127,8 +140,7 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
         }
         else 
         {
-            throw std::runtime_error("Not implemented: trajectory format \"" 
-                + format + "\"");
+            throw std::runtime_error("Invalid trajectory format!");
         }
 
         prev_frm_id = frm_id;
@@ -143,7 +155,7 @@ void trajectory_io::save_frame_trajectory(const std::string& path,
 }
 
 void trajectory_io::save_keyframe_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const trajectory_format format) const 
 {
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
 
@@ -173,9 +185,18 @@ void trajectory_io::save_keyframe_trajectory(const std::string& path,
         throw std::runtime_error("cannot create a file at " + path);
     }
 
-    spdlog::info("dump keyframe trajectory in \"{0}\" format from keyframe "
-        "{1} to keyframe {2} ({3} keyframes)", format, (*keyfrms.begin())->id_, 
+    spdlog::info("Dumping keyframe trajectory from keyframe {0} to keyframe "
+        "{1} ({2} keyframes)", (*keyfrms.begin())->id_, 
         (*keyfrms.rbegin())->id_, keyfrms.size());
+
+    // Write header.
+    if (format == trajectory_format::csv)
+    {
+        ofs << "Timestamp" << "," << "PositionX" << "," << "PositionY" << "," 
+            << "PositionZ" << "," << "QuaternionImaginary1" << "," 
+            << "QuaternionImaginary2" << "," << "QuaternionImaginary3" << "," 
+            << "QuaternionReal" << std::endl;
+    }
 
     for (const auto keyfrm : keyfrms) 
     {
@@ -183,7 +204,7 @@ void trajectory_io::save_keyframe_trajectory(const std::string& path,
         const Mat44_t cam_pose_wc = cam_pose_cw.inverse();
         const auto timestamp = keyfrm->timestamp_;
 
-        if (format == "KITTI") 
+        if (format == trajectory_format::kitti) 
         {
             ofs << std::setprecision(9)
                 << cam_pose_wc(0, 0) << " " << cam_pose_wc(0, 1) << " " 
@@ -193,7 +214,7 @@ void trajectory_io::save_keyframe_trajectory(const std::string& path,
                 << cam_pose_wc(2, 0) << " " << cam_pose_wc(2, 1) << " " 
                 << cam_pose_wc(2, 2) << " " << cam_pose_wc(2, 3) << std::endl;
         }
-        else if (format == "TUM") 
+        else if (format == trajectory_format::tum) 
         {
             const Mat33_t& rot_wc = cam_pose_wc.block<3, 3>(0, 0);
             const Vec3_t& trans_wc = cam_pose_wc.block<3, 1>(0, 3);
@@ -205,7 +226,7 @@ void trajectory_io::save_keyframe_trajectory(const std::string& path,
                 << " " << quat_wc.x() << " " << quat_wc.y() << " " 
                 << quat_wc.z() << " " << quat_wc.w() << std::endl;
         }
-        else if (format == "Default")
+        else if (format == trajectory_format::csv)
         {
             const Mat33_t& rot_wc = cam_pose_wc.block<3, 3>(0, 0);
             const Vec3_t& trans_wc = cam_pose_wc.block<3, 1>(0, 3);
@@ -219,8 +240,7 @@ void trajectory_io::save_keyframe_trajectory(const std::string& path,
         }
         else 
         {
-            throw std::runtime_error("Not implemented: trajectory format \"" 
-                + format + "\"");
+            throw std::runtime_error("Invalid trajectory format!");
         }
     }
 

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#define EIGEN_USE_BLAS 1
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <opencv2/core/types.hpp>

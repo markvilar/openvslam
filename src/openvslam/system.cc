@@ -96,7 +96,8 @@ system::system(const std::shared_ptr<config>& cfg,
 
     // global optimization module
     global_optimizer_ = new global_optimization_module(map_db_, bow_db_, 
-        bow_vocab_, camera_->setup_type_ != camera::setup_type_t::Monocular);
+        bow_vocab_, cfg->yaml_node_, 
+        camera_->setup_type_ != camera::setup_type_t::Monocular);
 
     // connect modules each other
     tracker_->set_mapping_module(mapper_);
@@ -170,7 +171,7 @@ void system::shutdown()
 }
 
 void system::save_frame_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const io::trajectory_format format) const 
 {
     pause_other_threads();
     io::trajectory_io trajectory_io(map_db_);
@@ -179,7 +180,7 @@ void system::save_frame_trajectory(const std::string& path,
 }
 
 void system::save_keyframe_trajectory(const std::string& path, 
-    const std::string& format) const 
+    const io::trajectory_format format) const 
 {
     pause_other_threads();
     io::trajectory_io trajectory_io(map_db_);
