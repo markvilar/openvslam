@@ -1,12 +1,12 @@
-gdb --args                                                                     \
-    /home/martin/dev/openvslam/build/apps/SlamApplication                      \
-    -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2  \
-    -c /home/martin/dev/openvslam/configurations/zed/water-perspective-01.yaml \
-    -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo                           \
-    --map /home/martin/data/Ekne-Survey/SLAM-Output/Debug/map.msg              \
-    --frame /home/martin/data/Ekne-Survey/SLAM-Output/Debug/ft.txt             \
-    --keyframe /home/martin/data/Ekne-Survey/SLAM-Output/Debug/kft.txt         \
-    --track-times /home/martin/data/Ekne-Survey/SLAM-Output/Debug/tt.txt       \
-    --frame-skip 1                                                             \
-    --frame-start 2500                                                         \
-    --eval-log
+gdb --args \
+    /home/martin/dev/openvslam/build/apps/SlamApplication \
+    -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2 \
+    -c /home/martin/dev/openvslam/configurations/zed/test.yaml \
+    -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo \
+    --map /home/martin/output/SLAM/Debug/Map.msg \
+    --frame /home/martin/output/SLAM/Debug/Frames.csv \
+    --keyframe /home/martin/output/SLAM/Debug/KeyFrames.csv \
+    --track-times /home/martin/output/SLAM/Debug/Track-Times.csv \
+    --frame-skip 1 \
+    --frame-start 2500 \
+    --eval-log \

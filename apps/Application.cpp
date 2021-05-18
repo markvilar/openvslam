@@ -3,9 +3,13 @@
 Application* Application::s_Instance = nullptr;
 
 Application::Application(const ApplicationConfiguration& configuration)
-    : m_Configuration(configuration), 
-    m_Rectifier(m_Configuration.OpenVSLAMConfiguration)
+    : m_Configuration(configuration),
+    m_Rectifier(m_Configuration.OpenVSLAMConfiguration->camera_, 
+        openvslam::util::yaml_optional_ref(
+            m_Configuration.OpenVSLAMConfiguration->yaml_node_, 
+            "StereoRectifier"))
 {
+    std::cout << "Making application." << std::endl;
     s_Instance = this;
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
@@ -17,13 +21,23 @@ Application::~Application()
 
 void Application::Run()
 {
+
+    std::cout << "Starting system." << std::endl;
+
 	// Build and start SLAM process.
 	m_System->startup();
 
+    std::cout << "Making viewer." << std::endl;
+
 	// Create viewer.
 	m_Viewer = std::make_shared<pangolin_viewer::viewer>(
-        m_Configuration.OpenVSLAMConfiguration, &*m_System, 
-        m_System->get_frame_publisher(), m_System->get_map_publisher());
+        openvslam::util::yaml_optional_ref(
+            m_Configuration.OpenVSLAMConfiguration->yaml_node_, 
+            "PangolinViewer"), 
+        &*m_System, m_System->get_frame_publisher(), 
+        m_System->get_map_publisher());
+
+    std::cout << "Starting tracker." << std::endl;
 
     // Start tracking thread.
     m_TrackingThread = std::make_unique<std::thread>(&Application::TrackFrames,

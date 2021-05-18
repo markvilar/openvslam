@@ -22,12 +22,8 @@ The later parts of this chapter explains what each of the commands do in more de
     $ ls
     run_video_slam   run_video_localization   lib/   ...
 
-    # download an ORB vocabulary from Google Drive
-    FILE_ID="1wUPb328th8bUqhOk-i8xllt5mgRW4n84"
-    curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null
-    CODE="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
-    curl -sLb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=${FILE_ID}" -o orb_vocab.zip
-    unzip orb_vocab.zip
+    # download an ORB vocabulary from GitHub
+    curl -sL "https://github.com/OpenVSLAM-Community/FBoW_orb_vocab/raw/main/orb_vocab.fbow" -o orb_vocab.fbow
 
     # download a sample dataset from Google Drive
     FILE_ID="1d8kADKWBptEqTF7jEVhKatBEdN7g0ikY"
@@ -44,12 +40,12 @@ The later parts of this chapter explains what each of the commands do in more de
     unzip aist_living_lab_2.zip
 
     # run tracking and mapping
-    ./run_video_slam -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_1/video.mp4 -c ./aist_living_lab_1/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
+    ./run_video_slam -v ./orb_vocab/orb_vocab.fbow -m ./aist_living_lab_1/video.mp4 -c ../example/aist/equirectangular.yaml --frame-skip 3 --no-sleep --map-db map.msg
     # click the [Terminate] button to close the viewer
     # you can find map.msg in the current directory
 
     # run localization
-    ./run_video_localization -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_2/video.mp4 -c ./aist_living_lab_2/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
+    ./run_video_localization -v ./orb_vocab/orb_vocab.fbow -m ./aist_living_lab_2/video.mp4 -c ../example/aist/equirectangular.yaml --frame-skip 3 --no-sleep --map-db map.msg
 
 
 Sample Datasets
@@ -217,7 +213,7 @@ Fisheye Datasets
       - `link <https://pan.baidu.com/s/11gqp2t-A2kHRntyN8ueqSQ>`__ (Pass: gumj)
 
 
-After downloading and uncompressing a zip file, you will find a video file and a config file under the uncompressed directory.
+After downloading and uncompressing a zip file, you will find a video file and a config file (old format) under the uncompressed directory.
 
 
 .. code-block:: bash
@@ -228,8 +224,7 @@ After downloading and uncompressing a zip file, you will find a video file and a
 
 You can put the dataset in any directory where you have access to.
 
-| Additionally, please download a vocabulary file for DBoW2 from `Google Drive <https://drive.google.com/open?id=1wUPb328th8bUqhOk-i8xllt5mgRW4n84>`__ or `Baudu Wangpan <https://pan.baidu.com/s/1627YS4b-DC_0Ioya3gLTPQ>`__ (Pass: zb6v).
-| After uncompressing it, you will find ``orb_vocab.dbow2``.
+| Additionally, please download a vocabulary file for FBoW from `here <https://github.com/OpenVSLAM-Community/FBoW_orb_vocab/raw/main/orb_vocab.fbow>`__.
 
 For the rest of this chapter, we will use ``aist_living_lab_1`` and ``aist_living_lab_2`` datasets for our example.
 
@@ -270,8 +265,8 @@ The paths should be changed accordingly.
 .. code-block:: bash
 
     $ ./run_video_slam \
-        -v /path/to/orb_vocab/orb_vocab.dbow2 \
-        -c /path/to/aist_living_lab_1/config.yaml \
+        -v /path/to/orb_vocab/orb_vocab.fbow \
+        -c /path/to/openvslam/example/aist/equirectangular.yaml \
         -m /path/to/aist_living_lab_1/video.mp4 \
         --frame-skip 3 \
         --map-db aist_living_lab_1_map.msg
@@ -279,11 +274,6 @@ The paths should be changed accordingly.
 
 The frame viewer and map viewer should launch as well.
 If the two viewers are not launching correctly, check if you launched the command with the appropriate paths.
-
-
-.. NOTE ::
-
-    If OpenVSLAM terminates abnormaly soon after initialization, rebuild g2o and OpenVSLAM with ``-DBUILD_WITH_MARCH_NATIVE=OFF`` option for ``cmake`` configulation.
 
 
 .. image:: ./img/slam_frame_viewer_1.png
@@ -298,7 +288,7 @@ If the two viewers are not launching correctly, check if you launched the comman
 
 .. code-block:: none
 
-    [2019-05-20 17:52:41.677] [I] config file loaded: /path/to/aist_living_lab_1/aist_living_lab_1/config.yaml
+    [2019-05-20 17:52:41.677] [I] config file loaded: /path/to/openvslam/example/aist/equirectangular.yaml
       ___               __   _____ _      _   __  __  
      / _ \ _ __  ___ _ _\ \ / / __| |    /_\ |  \/  | 
     | (_) | '_ \/ -_) ' \\ V /\__ \ |__ / _ \| |\/| | 
@@ -337,7 +327,7 @@ If the two viewers are not launching correctly, check if you launched the comman
       - [0.8, 1, 0.7, 1]
     Tracking Configuration:
 
-    [2019-05-20 17:52:41.678] [I] loading ORB vocabulary: /path/to/orb_vocab/orb_vocab.dbow2
+    [2019-05-20 17:52:41.678] [I] loading ORB vocabulary: /path/to/orb_vocab/orb_vocab.fbow
     [2019-05-20 17:52:42.037] [I] startup SLAM system
     [2019-05-20 17:52:42.038] [I] start local mapper
     [2019-05-20 17:52:42.038] [I] start loop closer
@@ -410,8 +400,8 @@ The paths should be changed accordingly.
 .. code-block:: bash
 
     $ ./run_video_localization \
-        -v /path/to/orb_vocab/orb_vocab.dbow2 \
-        -c /path/to/aist_living_lab_2/config.yaml \
+        -v /path/to/orb_vocab/orb_vocab.fbow \
+        -c /path/to/openvslam/example/aist/equirectangular.yaml \
         -m /path/to/aist_living_lab_2/video.mp4 \
         --frame-skip 3 \
         --map-db aist_living_lab_1_map.msg
@@ -431,7 +421,7 @@ You can see if the current frame is being localized, based on the prebuild map.
 
 .. code-block:: none
 
-    [2019-05-20 17:58:54.728] [I] config file loaded: /path/to/aist_living_lab_2/config.yaml
+    [2019-05-20 17:58:54.728] [I] config file loaded: /path/to/openvslam/example/aist/equirectangular.yaml
       ___               __   _____ _      _   __  __  
      / _ \ _ __  ___ _ _\ \ / / __| |    /_\ |  \/  | 
     | (_) | '_ \/ -_) ' \\ V /\__ \ |__ / _ \| |\/| | 
@@ -470,7 +460,7 @@ You can see if the current frame is being localized, based on the prebuild map.
       - [0.8, 1, 0.7, 1]
     Tracking Configuration:
 
-    [2019-05-20 17:58:54.729] [I] loading ORB vocabulary: /path/to/orb_vocab/orb_vocab.dbow2
+    [2019-05-20 17:58:54.729] [I] loading ORB vocabulary: /path/to/orb_vocab/orb_vocab.fbow
     [2019-05-20 17:58:55.083] [I] clear map database
     [2019-05-20 17:58:55.083] [I] clear BoW database
     [2019-05-20 17:58:55.083] [I] load the MessagePack file of database from aist_living_lab_1_map.msg

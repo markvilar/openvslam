@@ -130,6 +130,8 @@ int main(int argc, char* argv[])
     configuration.CLAHEClip = optionCLAHEClip->value();
     configuration.CLAHESize = optionCLAHESize->value();
 
+    spdlog::set_level(spdlog::level::debug);
+
     // OpenVSLAM configuration.
     configuration.OpenVSLAMConfiguration = std::make_shared<openvslam::config>(
         optionConfigurationPath->value());
