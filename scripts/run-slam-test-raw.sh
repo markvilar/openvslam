@@ -1,6 +1,6 @@
 /home/martin/dev/openvslam/build/apps/SlamApplication \
     -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2 \
-    -c /home/martin/dev/openvslam/configurations/zed/underwater-01-clahe.yaml \
+    -c /home/martin/dev/openvslam/configurations/zed/underwater-clahe.yaml \
     -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo \
     --map "/home/martin/output/SLAM/Debug/Segment-01-Map.msg" \
     --frame "/home/martin/output/SLAM/Debug/Segment-01-Frames.csv" \
