@@ -9,7 +9,6 @@ Application::Application(const ApplicationConfiguration& configuration)
             m_Configuration.OpenVSLAMConfiguration->yaml_node_, 
             "StereoRectifier"))
 {
-    std::cout << "Making application." << std::endl;
     s_Instance = this;
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
@@ -19,15 +18,119 @@ Application::~Application()
 {
 }
 
+std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
+    const std::shared_ptr<sl::Camera>& camera)
+{
+    // Allocate images.
+	sl::Mat leftImageRaw, rightImageRaw;
+	cv::Mat leftImageBGRA, rightImageBGRA;
+	cv::Mat leftImageRGB, rightImageRGB;
+	cv::Mat leftImageGray, rightImageGray;
+ 	cv::Mat leftImageFiltered, rightImageFiltered;
+	cv::Mat leftImageRectified, rightImageRectified;
+
+    // Retrieve RGB images from camera/SVO. TODO: Keep images on GPU?
+    camera->retrieveImage(leftImageRaw, sl::VIEW::LEFT_UNRECTIFIED, 
+        sl::MEM::CPU);
+    camera->retrieveImage(rightImageRaw, sl::VIEW::RIGHT_UNRECTIFIED, 
+        sl::MEM::CPU);
+
+    // Convert to OpenCV.
+    //leftImageBGRA = ;
+    //rightImageBGRA = 
+
+    cv::cvtColor(StereolabsToOpenCV(leftImageRaw), leftImageRGB, 
+        cv::COLOR_BGRA2RGB);
+    cv::cvtColor(StereolabsToOpenCV(rightImageRaw), rightImageRGB, 
+        cv::COLOR_BGRA2RGB);
+
+    const auto processStart = std::chrono::steady_clock::now();
+
+    switch(m_Configuration.Preprocessing)
+    {
+    case ImagePreprocessingType::None:
+        ProcessImageRaw(leftImageRGB, leftImageGray);
+        ProcessImageRaw(rightImageRGB, rightImageGray);
+        break;
+    case ImagePreprocessingType::HistogramEqualization:
+        ProcessImageHE(leftImageRGB, leftImageGray);
+        ProcessImageHE(rightImageRGB, rightImageGray);
+        break;
+    case ImagePreprocessingType::CLAHE:
+        ProcessImageCLAHE(leftImageRGB, leftImageGray);
+        ProcessImageCLAHE(rightImageRGB, rightImageGray);
+        break;
+    case ImagePreprocessingType::UIENet:
+        ProcessImageUIENet(leftImageRGB, leftImageGray);
+        ProcessImageUIENet(rightImageRGB, rightImageGray);
+        break;
+    default:
+        ProcessImageRaw(leftImageRGB, leftImageGray);
+        ProcessImageRaw(rightImageRGB, rightImageGray);
+        break;
+    }
+
+    if (m_Configuration.Filter)
+    {
+        // Noise reduction filter.
+        FilterImageBilateral(leftImageGray, leftImageFiltered);
+        FilterImageBilateral(rightImageGray, rightImageFiltered);
+    }
+    else
+    {
+        leftImageFiltered = leftImageGray;
+        rightImageFiltered = rightImageGray;
+    }
+    
+    m_Rectifier.rectify(leftImageFiltered, rightImageFiltered, 
+        leftImageRectified, rightImageRectified);
+
+    const auto processEnd = std::chrono::steady_clock::now();
+    const auto processTime = std::chrono::duration_cast
+        <std::chrono::duration<double>>(processEnd - processStart).count();
+
+    return { leftImageRectified, rightImageRectified, processTime };
+}
+
+void Application::ProcessImageRaw(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::cvtColor(src, dst, cv::COLOR_RGB2GRAY);
+}
+
+void Application::ProcessImageHE(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::Mat gray;
+    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
+    openvslam::util::histogram_equalization(gray, dst);
+}
+
+void Application::ProcessImageCLAHE(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::Mat gray;
+    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
+    openvslam::util::clahe(gray, dst, 
+        m_Configuration.CLAHEClip, 
+        { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
+}
+
+void Application::ProcessImageUIENet(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::Mat gray;
+    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
+    // TODO: Add UIENet.
+    dst = std::move(gray);
+}
+
+void Application::FilterImageBilateral(const cv::Mat& src, cv::Mat& dst)
+{
+    cv::bilateralFilter(src, dst, m_Configuration.FilterDiameter, 
+        m_Configuration.FilterColor, m_Configuration.FilterSpace);
+}
+
 void Application::Run()
 {
-
-    std::cout << "Starting system." << std::endl;
-
 	// Build and start SLAM process.
 	m_System->startup();
-
-    std::cout << "Making viewer." << std::endl;
 
 	// Create viewer.
 	m_Viewer = std::make_shared<pangolin_viewer::viewer>(
@@ -36,8 +139,6 @@ void Application::Run()
             "PangolinViewer"), 
         &*m_System, m_System->get_frame_publisher(), 
         m_System->get_map_publisher());
-
-    std::cout << "Starting tracker." << std::endl;
 
     // Start tracking thread.
     m_TrackingThread = std::make_unique<std::thread>(&Application::TrackFrames,
@@ -61,16 +162,8 @@ void Application::Run()
             m_Configuration.KeyframeTrajectoryPath, 
             openvslam::io::trajectory_format::csv);
 
-		std::ofstream ofs(m_Configuration.TrackTimesPath, std::ios::out);
-		if (ofs.is_open()) 
-		{
-            ofs << "Track-Time" << std::endl;
-			for (const auto trackTime : *m_TrackTimes) 
-			{
-				ofs << trackTime << std::endl;
-			}
-			ofs.close();
-		}
+        SaveTrackTimes();
+        SaveProcessTimes();
 	}
 
 	// Output map information.
@@ -83,12 +176,12 @@ void Application::Run()
 void Application::TrackFrames()
 {
 	// InitParameters - Open SVO file.
-	sl::Camera camera;
+	auto camera = std::make_shared<sl::Camera>(); 
 	sl::InitParameters initParameters;
 	initParameters.input.setFromSVOFile(m_Configuration.SVOPath.c_str());
 	initParameters.svo_real_time_mode = m_Configuration.Realtime;
 
-	auto cameraState= camera.open(initParameters);
+	auto cameraState= camera->open(initParameters);
 	if (cameraState != sl::ERROR_CODE::SUCCESS)
 	{
 		std::cerr << toString(cameraState) << ": " << toVerbose(cameraState) 
@@ -97,15 +190,16 @@ void Application::TrackFrames()
 	}
 
     // Frame information.
-	unsigned int framesTotal = camera.getSVONumberOfFrames();
+	unsigned int framesTotal = camera->getSVONumberOfFrames();
 	unsigned int frame = m_Configuration.FrameStart;
     double timestamp = 0.0;
-    double fps = camera.getInitParameters().camera_fps;
+    double fps = camera->getInitParameters().camera_fps;
     m_TrackTimes = std::make_shared<std::vector<float>>(framesTotal, 0.0);
+    m_ProcessTimes = std::make_shared<std::vector<float>>(framesTotal, 0.0);
 
 	if (m_Configuration.FrameStart < framesTotal)
 	{
-		camera.setSVOPosition(m_Configuration.FrameStart);
+		camera->setSVOPosition(m_Configuration.FrameStart);
 	}
 	else
 	{
@@ -119,15 +213,9 @@ void Application::TrackFrames()
 		return;
 	}
 
-    // Allocate images.
-	sl::Mat nativeLeftImage, nativeRightImage;
-	cv::Mat unprocessedLeftImage, unprocessedRightImage;
-    cv::Mat processedLeftImage, processedRightImage;
-	cv::Mat rectifiedLeftImage, rectifiedRightImage;
-
-	while (frame < framesTotal - 1) 
+	while (frame < framesTotal - 1 and frame < m_Configuration.FrameStop) 
 	{
-        cameraState = camera.grab();
+        cameraState = camera->grab();
         if (cameraState != sl::ERROR_CODE::SUCCESS)
         {
             continue;
@@ -135,71 +223,32 @@ void Application::TrackFrames()
         
         frame++;
 
-        // Retrieve grayscale images.
-        camera.retrieveImage(nativeLeftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
-            sl::MEM::CPU);
-        camera.retrieveImage(nativeRightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
-            sl::MEM::CPU);
+        auto[leftImageProcessed, rightImageProcessed, processTime] = 
+            ProcessImages(camera);
 
-        // Convert to OpenCV.
-        unprocessedLeftImage = StereolabsToOpenCV(nativeLeftImage);
-        unprocessedRightImage = StereolabsToOpenCV(nativeRightImage);
-
-        // Extract images and process.
-        if (m_Configuration.Preprocessing 
-            == ImagePreprocessingType::HistogramEqualization) 
-        {
-            // Equalize image histograms.
-            openvslam::util::histogram_equalization(unprocessedLeftImage, 
-                processedLeftImage);
-            openvslam::util::histogram_equalization(unprocessedRightImage,
-                processedRightImage);
-        }
-        else if (m_Configuration.Preprocessing == ImagePreprocessingType::CLAHE)
-        {
-            openvslam::util::clahe(unprocessedLeftImage, processedLeftImage, 
-                m_Configuration.CLAHEClip, 
-                { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
-            openvslam::util::clahe(unprocessedRightImage, processedRightImage, 
-                m_Configuration.CLAHEClip, 
-                { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
-        }
-        else
-        {
-            processedLeftImage = unprocessedLeftImage;
-            processedRightImage = unprocessedRightImage;
-        }
-
-        // TODO: Add lowpass filter option.
-        if (true)
-        {
-        }
-
-        if (processedLeftImage.empty() || processedRightImage.empty()) 
+        if (leftImageProcessed.empty() || rightImageProcessed.empty()) 
         {
             continue;
         }
-
-        m_Rectifier.rectify(processedLeftImage, processedRightImage, 
-            rectifiedLeftImage, rectifiedRightImage);
 
         const auto trackStart = std::chrono::steady_clock::now();
 
         if (frame % m_Configuration.FrameSkip == 0) 
         {
-            timestamp = camera.getTimestamp(sl::TIME_REFERENCE::IMAGE)
+            timestamp = camera->getTimestamp(sl::TIME_REFERENCE::IMAGE)
                 .getMilliseconds() / double(1000) + m_Configuration.Bias;
 
-            m_System->feed_stereo_frame(rectifiedLeftImage, 
-                rectifiedRightImage, timestamp);
+            m_System->feed_stereo_frame(leftImageProcessed, 
+                rightImageProcessed, timestamp);
         }
 
-        const auto trackEnd= std::chrono::steady_clock::now();
+        const auto trackEnd = std::chrono::steady_clock::now();
 
         const auto trackTime = std::chrono::duration_cast
             <std::chrono::duration<double>>(trackEnd - trackStart).count();
         if (frame % m_Configuration.FrameSkip == 0) 
         {
+            m_ProcessTimes->insert(m_ProcessTimes->begin() + frame, processTime);
             m_TrackTimes->insert(m_TrackTimes->begin() + frame, trackTime);
         }
 
@@ -231,5 +280,33 @@ void Application::TrackFrames()
     if (m_Configuration.Terminate) 
     {
         m_Viewer->request_terminate();
+    }
+}
+
+void Application::SaveTrackTimes()
+{
+    std::ofstream ofs(m_Configuration.TrackTimesPath, std::ios::out);
+    if (ofs.is_open()) 
+    {
+        ofs << "Track-Time" << std::endl;
+        for (const auto trackTime : *m_TrackTimes) 
+        {
+            ofs << trackTime << std::endl;
+        }
+        ofs.close();
+    }
+}
+
+void Application::SaveProcessTimes()
+{
+    std::ofstream ofs(m_Configuration.ProcessTimesPath, std::ios::out);
+    if (ofs.is_open()) 
+    {
+        ofs << "Process-Time" << std::endl;
+        for (const auto processTime : *m_ProcessTimes) 
+        {
+            ofs << processTime << std::endl;
+        }
+        ofs.close();
     }
 }

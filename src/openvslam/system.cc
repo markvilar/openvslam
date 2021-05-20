@@ -44,7 +44,7 @@ system::system(const std::shared_ptr<config>& cfg,
     message_stream << std::endl;
 
     // show configuration
-    message_stream << *cfg_ << std::endl;
+    //message_stream << *cfg_ << std::endl;
 
     spdlog::info(message_stream.str());
 

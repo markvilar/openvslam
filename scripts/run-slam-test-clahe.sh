@@ -6,10 +6,16 @@
     --frame "/home/martin/output/SLAM/Debug/Segment-01-Frames.csv" \
     --keyframe "/home/martin/output/SLAM/Debug/Segment-01-Keyframes.csv" \
     --track-times "/home/martin/output/SLAM/Debug/Track-Times.csv" \
+    --process-times "/home/martin/output/SLAM/Debug/Process-Times.csv" \
     --frame-skip 1 \
-    --frame-start 3500 \
-    --eval-log \
+    --frame-start 2500 \
+    --frame-stop 10000 \
+    --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 2 \
     --clahe-clip 4.0 \
-    --clahe-size 10 \
+    --clahe-size 20 \
+    --filter \
+    --filter-dia 10 \
+    --filter-color 60 \
+    --filter-space 20 \

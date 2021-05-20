@@ -14,6 +14,9 @@ ImagePreprocessingType IntToImagePreprocessingType(const int i)
     case 2:
         o = ImagePreprocessingType::CLAHE;
         break;
+    case 3:
+        o = ImagePreprocessingType::UIENet;
+        break;
     default:
         o = ImagePreprocessingType::None;
         break;
@@ -35,6 +38,9 @@ int ImagePreprocessingTypeToInt(const ImagePreprocessingType x)
     case ImagePreprocessingType::CLAHE:
         y = 2;
         break;
+    case ImagePreprocessingType::UIENet:
+        y = 3;
+        break;
     default:
         y = 0;
         break;
@@ -51,10 +57,13 @@ std::string ToString(const ImagePreprocessingType x)
         y = "None";
         break;
     case ImagePreprocessingType::HistogramEqualization:
-        y = "Histogram equalization";
+        y = "HE";
         break;
     case ImagePreprocessingType::CLAHE:
         y = "CLAHE";
+        break;
+    case ImagePreprocessingType::UIENet:
+        y = "UIENet";
         break;
     default:
         y = "None";

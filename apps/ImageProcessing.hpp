@@ -8,6 +8,7 @@ enum class ImagePreprocessingType
     None                  = 0,
     HistogramEqualization = 1,
     CLAHE                 = 2,
+    UIENet                = 3,
 };
 
 ImagePreprocessingType IntToImagePreprocessingType(const int x);

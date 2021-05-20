@@ -1,15 +1,17 @@
 /home/martin/dev/openvslam/build/apps/SlamApplication \
     -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2 \
-    -c /home/martin/dev/openvslam/configurations/zed/underwater-clahe.yaml \
+    -c /home/martin/dev/openvslam/configurations/zed/underwater-raw.yaml \
     -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo \
     --map "/home/martin/output/SLAM/Debug/Segment-01-Map.msg" \
     --frame "/home/martin/output/SLAM/Debug/Segment-01-Frames.csv" \
     --keyframe "/home/martin/output/SLAM/Debug/Segment-01-Keyframes.csv" \
     --track-times "/home/martin/output/SLAM/Debug/Track-Times.csv" \
+    --process-times "/home/martin/output/SLAM/Debug/Process-Times.csv" \
     --frame-skip 1 \
-    --frame-start 3500 \
-    --eval-log \
+    --frame-start 2500 \
+    --eval-log --auto-term --debug \
     --bias 51057.171 \
-    --preprocessing 2 \
-    --clahe-clip 4.0 \
-    --clahe-size 10 \
+    --preprocessing 0 \
+    --filter-dia 7 \
+    --filter-color 40 \
+    --filter-space 40 \
