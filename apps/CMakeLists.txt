@@ -101,23 +101,31 @@ if(USE_PANGOLIN_VIEWER)
 endif()
 
 # -----------------------------------------------------------------------------
-# ---- Torchtest --------------------------------------------------------------
+# ---- TorchTrace -------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-add_executable(Torchtest Torchtest.cpp)
+add_executable(TorchTrace TorchTrace.cpp)
 
-target_compile_features(Torchtest PRIVATE cxx_std_17)
+target_compile_features(TorchTrace PRIVATE cxx_std_17)
 
-target_link_libraries(Torchtest PRIVATE
+target_link_libraries(TorchTrace PRIVATE
     "${TORCH_LIBRARIES}"
-	#"${PROJECT_NAME}"
-	#"${ZED_LIBS}"
-	#"${CUDA_LIBRARIES}"
 	opencv_imgcodecs
 	opencv_videoio)
 
-target_include_directories(Torchtest PUBLIC 
-	#${CUDA_INCLUDE_DIRS}
-	#${ZED_INCLUDE_DIRS}
-	#${popl_INCLUDE_DIR}
-    )
+target_include_directories(TorchTrace PUBLIC )
+
+# -----------------------------------------------------------------------------
+# ---- TorchScript-------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+add_executable(TorchScript TorchScript.cpp)
+
+target_compile_features(TorchScript PRIVATE cxx_std_17)
+
+target_link_libraries(TorchScript PRIVATE
+    "${TORCH_LIBRARIES}"
+	opencv_imgcodecs
+	opencv_videoio)
+
+target_include_directories(TorchScript PUBLIC )
