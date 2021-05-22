@@ -12,6 +12,13 @@ Application::Application(const ApplicationConfiguration& configuration)
     s_Instance = this;
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
+
+    // Load the Torch model if we want to use it.
+    if (configuration.Preprocessing == ImagePreprocessingType::UIENet)
+    {
+        m_UIENet = std::make_shared<torch::jit::script::Module>(
+            torch::jit::load(configuration.UIENetPath));
+    }
 }
 
 Application::~Application()
@@ -22,64 +29,43 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
     const std::shared_ptr<sl::Camera>& camera)
 {
     // Allocate images.
-	sl::Mat leftImageRaw, rightImageRaw;
-	cv::Mat leftImageBGRA, rightImageBGRA;
-	cv::Mat leftImageRGB, rightImageRGB;
-	cv::Mat leftImageGray, rightImageGray;
+	cv::Mat leftImage, rightImage;
  	cv::Mat leftImageFiltered, rightImageFiltered;
 	cv::Mat leftImageRectified, rightImageRectified;
-
-    // Retrieve RGB images from camera/SVO. TODO: Keep images on GPU?
-    camera->retrieveImage(leftImageRaw, sl::VIEW::LEFT_UNRECTIFIED, 
-        sl::MEM::CPU);
-    camera->retrieveImage(rightImageRaw, sl::VIEW::RIGHT_UNRECTIFIED, 
-        sl::MEM::CPU);
-
-    // Convert to OpenCV.
-    //leftImageBGRA = ;
-    //rightImageBGRA = 
-
-    cv::cvtColor(StereolabsToOpenCV(leftImageRaw), leftImageRGB, 
-        cv::COLOR_BGRA2RGB);
-    cv::cvtColor(StereolabsToOpenCV(rightImageRaw), rightImageRGB, 
-        cv::COLOR_BGRA2RGB);
 
     const auto processStart = std::chrono::steady_clock::now();
 
     switch(m_Configuration.Preprocessing)
     {
     case ImagePreprocessingType::None:
-        ProcessImageRaw(leftImageRGB, leftImageGray);
-        ProcessImageRaw(rightImageRGB, rightImageGray);
+        // TODO: Bug here!
+        std::tie(leftImage, rightImage) = ProcessImagePairRaw(camera);
         break;
     case ImagePreprocessingType::HistogramEqualization:
-        ProcessImageHE(leftImageRGB, leftImageGray);
-        ProcessImageHE(rightImageRGB, rightImageGray);
+        std::tie(leftImage, rightImage) = ProcessImagePairHE(camera);
         break;
     case ImagePreprocessingType::CLAHE:
-        ProcessImageCLAHE(leftImageRGB, leftImageGray);
-        ProcessImageCLAHE(rightImageRGB, rightImageGray);
+        std::cout << "CLAHE" << std::endl;
+        std::tie(leftImage, rightImage) = ProcessImagePairCLAHE(camera);
         break;
     case ImagePreprocessingType::UIENet:
-        ProcessImageUIENet(leftImageRGB, leftImageGray);
-        ProcessImageUIENet(rightImageRGB, rightImageGray);
+        std::tie(leftImage, rightImage) = ProcessImagePairUIENet(camera);
         break;
     default:
-        ProcessImageRaw(leftImageRGB, leftImageGray);
-        ProcessImageRaw(rightImageRGB, rightImageGray);
+        std::tie(leftImage, rightImage) = ProcessImagePairRaw(camera);
         break;
     }
 
     if (m_Configuration.Filter)
     {
         // Noise reduction filter.
-        FilterImageBilateral(leftImageGray, leftImageFiltered);
-        FilterImageBilateral(rightImageGray, rightImageFiltered);
+        FilterImageBilateral(leftImage, leftImageFiltered);
+        FilterImageBilateral(rightImage, rightImageFiltered);
     }
     else
     {
-        leftImageFiltered = leftImageGray;
-        rightImageFiltered = rightImageGray;
+        leftImageFiltered = leftImage;
+        rightImageFiltered = rightImage;
     }
     
     m_Rectifier.rectify(leftImageFiltered, rightImageFiltered, 
@@ -92,33 +78,100 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
     return { leftImageRectified, rightImageRectified, processTime };
 }
 
-void Application::ProcessImageRaw(const cv::Mat& src, cv::Mat& dst)
+std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairRaw(
+    const std::shared_ptr<sl::Camera>& camera)
 {
-    cv::cvtColor(src, dst, cv::COLOR_RGB2GRAY);
+	sl::Mat leftImage, rightImage;
+	cv::Mat leftImageGray, rightImageGray;
+
+    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+
+    leftImageGray = StereolabsToCVMat(leftImage);
+    rightImageGray = StereolabsToCVMat(rightImage);
+
+    return { leftImageGray.clone(), rightImageGray.clone() };
 }
 
-void Application::ProcessImageHE(const cv::Mat& src, cv::Mat& dst)
+std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairHE(
+    const std::shared_ptr<sl::Camera>& camera)
 {
-    cv::Mat gray;
-    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
-    openvslam::util::histogram_equalization(gray, dst);
+   	sl::Mat leftImage, rightImage;
+	cv::Mat leftImageGray, rightImageGray;
+	cv::Mat leftImageEqualized, rightImageEqualized;
+
+    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+
+    leftImageGray = StereolabsToCVMat(leftImage);
+    rightImageGray = StereolabsToCVMat(rightImage);
+
+    openvslam::util::histogram_equalization(leftImageGray, 
+        leftImageEqualized);
+    openvslam::util::histogram_equalization(rightImageGray, 
+        rightImageEqualized);
+
+    return { leftImageEqualized, rightImageEqualized };
 }
 
-void Application::ProcessImageCLAHE(const cv::Mat& src, cv::Mat& dst)
+std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairCLAHE(
+    const std::shared_ptr<sl::Camera>& camera)
 {
-    cv::Mat gray;
-    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
-    openvslam::util::clahe(gray, dst, 
+   	sl::Mat leftImage, rightImage;
+	cv::Mat leftImageGray, rightImageGray;
+	cv::Mat leftImageEqualized, rightImageEqualized;
+
+    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
+        sl::MEM::CPU);
+
+    leftImageGray = StereolabsToCVMat(leftImage);
+    rightImageGray = StereolabsToCVMat(rightImage);
+
+    openvslam::util::clahe(leftImageGray, leftImageEqualized, 
         m_Configuration.CLAHEClip, 
         { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
+
+    openvslam::util::clahe(rightImageGray, rightImageEqualized, 
+        m_Configuration.CLAHEClip, 
+        { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
+
+    return { leftImageEqualized, rightImageEqualized };
 }
 
-void Application::ProcessImageUIENet(const cv::Mat& src, cv::Mat& dst)
+std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairUIENet(
+    const std::shared_ptr<sl::Camera>& camera)
 {
-    cv::Mat gray;
-    cv::cvtColor(src, gray, cv::COLOR_RGB2GRAY);
-    // TODO: Add UIENet.
-    dst = std::move(gray);
+   	sl::Mat leftImage, rightImage;
+    cv::cuda::GpuMat leftImageGPU, rightImageGPU;
+
+    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED, 
+        sl::MEM::GPU);
+    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED, 
+        sl::MEM::GPU);
+
+    // Convert from uint8 to float32.
+    /*
+    cv::Mat imageFloat;
+    src.convertTo(imageFloat, CV_32FC3, 1.0f / 255.0f);
+
+    // Upload image tensor to GPU.
+    cv::cuda::GpuMat imageGPU;
+    imageGPU.upload(imageFloat);
+    */
+
+    // TODO: Input tensor to model.
+
+    // TODO: Download output tensor fram model.
+
+    // TODO: Convert to grayscale.
+
+    return ProcessImagePairRaw(camera);
 }
 
 void Application::FilterImageBilateral(const cv::Mat& src, cv::Mat& dst)

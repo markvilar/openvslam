@@ -77,20 +77,23 @@ add_executable(SlamApplication SlamApplication.cpp
     Application.cpp
     ApplicationConfiguration.hpp
     ApplicationConfiguration.cpp
+    Image.hpp
+    Image.cpp
     ImageProcessing.hpp
-    ImageProcessing.cpp
-    Utilities.hpp
-    Utilities.cpp)
+    ImageProcessing.cpp)
 
 target_include_directories(SlamApplication PUBLIC 
 	${CUDA_INCLUDE_DIRS}
 	${ZED_INCLUDE_DIRS}
 	${popl_INCLUDE_DIR})
+
 target_compile_features(SlamApplication PRIVATE cxx_std_17)
+
 target_link_libraries(SlamApplication PRIVATE 
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
 	${CUDA_LIBRARIES}
+    ${TORCH_LIBRARIES}
 	opencv_imgcodecs
 	opencv_videoio)
 

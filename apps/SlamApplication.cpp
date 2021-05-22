@@ -71,6 +71,9 @@ int main(int argc, char* argv[])
         "", "clahe-clip", "CLAHE clip value.", 8.0);
     auto optionCLAHESize= options.add<popl::Value<unsigned int>>(
         "", "clahe-size", "CLAHE clip value.", 40);
+
+    auto optionUIENetPath = options.add<popl::Value<std::string>>(
+        "", "uienet", "Path to the UIENet model file.", "");
    
     // Parse arguments.
     try 
@@ -128,11 +131,6 @@ int main(int argc, char* argv[])
     configuration.TrackTimesPath = optionTrackTimesPath->value();
     configuration.ProcessTimesPath = optionProcessTimesPath->value();
 
-    // Filter.
-    configuration.Filter = optionFilter->value();
-    configuration.FilterDiameter = optionFilterDiameter->value();
-    configuration.FilterColor = optionFilterColor->value();
-    configuration.FilterSpace = optionFilterSpace->value();
 
     // Settings.
     configuration.FrameSkip = optionFrameSkip->value();
@@ -151,6 +149,13 @@ int main(int argc, char* argv[])
         optionPreprocessing->value());
     configuration.CLAHEClip = optionCLAHEClip->value();
     configuration.CLAHESize = optionCLAHESize->value();
+    configuration.UIENetPath = optionUIENetPath->value();
+
+    // Filter.
+    configuration.Filter = optionFilter->value();
+    configuration.FilterDiameter = optionFilterDiameter->value();
+    configuration.FilterColor = optionFilterColor->value();
+    configuration.FilterSpace = optionFilterSpace->value();
 
     // OpenVSLAM configuration.
     configuration.OpenVSLAMConfiguration = std::make_shared<openvslam::config>(

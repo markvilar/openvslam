@@ -9,7 +9,7 @@
     --process-times "/home/martin/output/SLAM/Debug/Process-Times.csv" \
     --frame-skip 1 \
     --frame-start 2500 \
-    --frame-stop 10000 \
+    --frame-stop 15000 \
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 2 \

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <memory>
 
-int main(int argc, const char* argv[]) 
+int main() 
 {
     std::string modelPath = 
         "/home/martin/dev/openvslam/configurations/models/UIENet-Trace.pt";

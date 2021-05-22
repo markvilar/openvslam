@@ -40,6 +40,8 @@ public:
     double CLAHEClip = 0.0f;
     int CLAHESize = 0;
 
+    std::string UIENetPath;
+
     std::shared_ptr<openvslam::config> OpenVSLAMConfiguration;
 };
 

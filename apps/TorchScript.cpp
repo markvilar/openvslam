@@ -5,10 +5,11 @@
 
 #include <torch/script.h>
 
+#include <chrono>
 #include <iostream>
 #include <memory>
 
-int main(int argc, const char* argv[]) 
+int main() 
 {
     std::string modelPath = 
         "/home/martin/dev/openvslam/configurations/models/UIENet-CUDA-Script.pt";
@@ -26,8 +27,10 @@ int main(int argc, const char* argv[])
 
 
     std::vector<torch::jit::IValue> inputs;
-    auto tensorOptions = torch::TensorOptions().device(torch::kCUDA, 0)
-        .requires_grad(true);
+    auto tensorOptions = torch::TensorOptions()
+        .dtype(torch::kFloat32)
+        .device(torch::kCUDA, 0)
+        .requires_grad(false);
     try
     {
         inputs.push_back(torch::ones({1, 3, 1080, 1920}, tensorOptions));
@@ -38,8 +41,8 @@ int main(int argc, const char* argv[])
         std::cerr << e.what();
         return -1;
     }
+    torch::Tensor output = module.forward(inputs).toTensor();
+    //std::cout << output.slice(/*dim=*/1, /*start=*/0, /*end=*/5) << '\n';
 
-    at::Tensor output = module.forward(inputs).toTensor();
-    std::cout << output.slice(/*dim=*/1, /*start=*/0, /*end=*/5) << '\n';
-    std::cout << "ok\n";
+    std::cout << output.dtype() << std::endl;
 }
