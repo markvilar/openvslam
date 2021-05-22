@@ -1,5 +1,7 @@
 #include "Image.hpp"
 
+// ---- Stereolabs / CV -------------------------------------------------------
+
 auto StereolabsToCVMatType(const sl::MAT_TYPE type)
 {
 	switch (type) 
@@ -25,19 +27,68 @@ auto StereolabsToCVMatType(const sl::MAT_TYPE type)
 	}
 }
 
-cv::Mat StereolabsToCVMat(const sl::Mat& input) 
+cv::Mat StereolabsToCVMat(const sl::Mat& mat) 
 {
-	return cv::Mat(static_cast<int>(input.getHeight()), 
-        static_cast<int>(input.getWidth()), 
-        StereolabsToCVMatType(input.getDataType()), 
-		input.getPtr<sl::uchar1>(sl::MEM::CPU));
+	return cv::Mat(static_cast<int>(mat.getHeight()), 
+        static_cast<int>(mat.getWidth()), 
+        StereolabsToCVMatType(mat.getDataType()), 
+		mat.getPtr<sl::uchar1>(sl::MEM::CPU),
+        mat.getStepBytes(sl::MEM::CPU));
 }
 
-cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& input)
+cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& mat)
 {
-    return cv::cuda::GpuMat(static_cast<int>(input.getHeight()), 
-        static_cast<int>(input.getWidth()), 
-        StereolabsToCVMatType(input.getDataType()),
-        input.getPtr<sl::uchar1>(sl::MEM::GPU), 
-        input.getStepBytes(sl::MEM::GPU));
+    return cv::cuda::GpuMat(static_cast<int>(mat.getHeight()), 
+        static_cast<int>(mat.getWidth()), 
+        StereolabsToCVMatType(mat.getDataType()),
+        mat.getPtr<sl::uchar1>(sl::MEM::GPU), 
+        mat.getStepBytes(sl::MEM::GPU));
+}
+
+// ---- Stereolabs / Torch ----------------------------------------------------
+
+torch::Tensor StereolabsToTensor(const sl::Mat& mat)
+{
+    // std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols};
+    std::vector<int64_t> dims = { 1, mat.getChannels(), mat.getHeight(), 
+        mat.getWidth() };
+    // int64 step = im.step; // / sizeof(float);
+    int64 step = mat.getStep();
+    std::vector<int64_t> strides = { 1, 1, step, mat.getChannels() };
+    auto options = torch::TensorOptions().dtype(torch::kUInt8).device(
+        torch::kCUDA);
+    return torch::from_blob(mat.getPtr<sl::uchar1>(sl::MEM::GPU), dims, 
+        strides,  options);
+}
+
+sl::Mat TensorToStereolabs(const torch::Tensor& tensor)
+{
+}
+
+// ---- CV / Torch ------------------------------------------------------------
+
+
+
+cv::Mat TensorToCVMat(const torch::Tensor& tensor) 
+{
+    auto output = tensor.permute({ 0, 2, 3, 1 });
+    output = output.squeeze(0).detach();
+    output = output.to(torch::kU8).to(torch::kCPU);
+
+    auto sizes = output.sizes();
+    cv::Mat mat{cv::Size{static_cast<int>(sizes[1]), 
+        static_cast<int>(sizes[0]) }, CV_8UC(static_cast<int>(sizes[2])), 
+        output.data_ptr()};
+
+    return mat;
+}
+
+torch::Tensor CVMatToTensor(const cv::Mat& mat)
+{
+    std::vector<int64_t> dims = { 1, mat.channels(), mat.rows, mat.cols };
+    int64 step = mat.step; // / sizeof(float);
+    std::vector<int64_t> strides = { 1, 1, step, mat.channels() };
+    auto options = torch::TensorOptions().dtype(torch::kUInt8)
+        .device(torch::kCUDA);
+    return torch::from_blob(mat.data, dims, strides,  options);
 }

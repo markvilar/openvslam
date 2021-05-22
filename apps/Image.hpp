@@ -12,12 +12,22 @@
 
 #include <assert.h>
 
+// ---- Stereolabs / CV -------------------------------------------------------
+
 auto StereolabsToCVMatType(const sl::MAT_TYPE type);
 
-cv::Mat StereolabsToCVMat(const sl::Mat& input);
+cv::Mat StereolabsToCVMat(const sl::Mat& mat);
 
-cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& input);
+cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& mat);
 
-torch::Tensor CVMatToTensor(const cv::cuda::GpuMat& mat);
+// ---- Stereolabs / Torch ----------------------------------------------------
 
-cv::cuda::GpuMat TensorToCVMat(const torch::Tensor& tensor);
+torch::Tensor StereolabsToTensor(const sl::Mat& mat);
+
+sl::Mat TensorToStereolabs(const torch::Tensor& tensor);
+
+// ---- CV / Torch ------------------------------------------------------------
+
+cv::Mat TensorToCVMat(const torch::Tensor& tensor);
+
+torch::Tensor CVMatToTensor(const cv::Mat& mat);

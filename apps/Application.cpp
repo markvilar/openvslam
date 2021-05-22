@@ -38,14 +38,12 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
     switch(m_Configuration.Preprocessing)
     {
     case ImagePreprocessingType::None:
-        // TODO: Bug here!
         std::tie(leftImage, rightImage) = ProcessImagePairRaw(camera);
         break;
     case ImagePreprocessingType::HistogramEqualization:
         std::tie(leftImage, rightImage) = ProcessImagePairHE(camera);
         break;
     case ImagePreprocessingType::CLAHE:
-        std::cout << "CLAHE" << std::endl;
         std::tie(leftImage, rightImage) = ProcessImagePairCLAHE(camera);
         break;
     case ImagePreprocessingType::UIENet:
@@ -82,15 +80,14 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairRaw(
     const std::shared_ptr<sl::Camera>& camera)
 {
 	sl::Mat leftImage, rightImage;
-	cv::Mat leftImageGray, rightImageGray;
 
     camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
         sl::MEM::CPU);
     camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
         sl::MEM::CPU);
 
-    leftImageGray = StereolabsToCVMat(leftImage);
-    rightImageGray = StereolabsToCVMat(rightImage);
+    auto leftImageGray = StereolabsToCVMat(leftImage);
+    auto rightImageGray = StereolabsToCVMat(rightImage);
 
     return { leftImageGray.clone(), rightImageGray.clone() };
 }
@@ -99,7 +96,6 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairHE(
     const std::shared_ptr<sl::Camera>& camera)
 {
    	sl::Mat leftImage, rightImage;
-	cv::Mat leftImageGray, rightImageGray;
 	cv::Mat leftImageEqualized, rightImageEqualized;
 
     camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
@@ -107,8 +103,8 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairHE(
     camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
         sl::MEM::CPU);
 
-    leftImageGray = StereolabsToCVMat(leftImage);
-    rightImageGray = StereolabsToCVMat(rightImage);
+    auto leftImageGray = StereolabsToCVMat(leftImage);
+    auto rightImageGray = StereolabsToCVMat(rightImage);
 
     openvslam::util::histogram_equalization(leftImageGray, 
         leftImageEqualized);
@@ -122,7 +118,6 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairCLAHE(
     const std::shared_ptr<sl::Camera>& camera)
 {
    	sl::Mat leftImage, rightImage;
-	cv::Mat leftImageGray, rightImageGray;
 	cv::Mat leftImageEqualized, rightImageEqualized;
 
     camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
@@ -130,8 +125,8 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairCLAHE(
     camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
         sl::MEM::CPU);
 
-    leftImageGray = StereolabsToCVMat(leftImage);
-    rightImageGray = StereolabsToCVMat(rightImage);
+    auto leftImageGray = StereolabsToCVMat(leftImage);
+    auto rightImageGray = StereolabsToCVMat(rightImage);
 
     openvslam::util::clahe(leftImageGray, leftImageEqualized, 
         m_Configuration.CLAHEClip, 
@@ -148,28 +143,35 @@ std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairUIENet(
     const std::shared_ptr<sl::Camera>& camera)
 {
    	sl::Mat leftImage, rightImage;
-    cv::cuda::GpuMat leftImageGPU, rightImageGPU;
+    cv::Mat leftImageRGB, rightImageRGB;
+    cv::Mat leftImageFloatRGB, rightImageFloatRGB;
 
     camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED, 
-        sl::MEM::GPU);
+        sl::MEM::CPU);
     camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED, 
-        sl::MEM::GPU);
+        sl::MEM::CPU);
 
-    // Convert from uint8 to float32.
+    auto leftTensor = StereolabsToTensor(leftImage);
+    auto rightTensor = StereolabsToTensor(rightImage);
     /*
-    cv::Mat imageFloat;
-    src.convertTo(imageFloat, CV_32FC3, 1.0f / 255.0f);
+    // Create OpenCV Mat.
+    cv::cvtColor(StereolabsToCVMat(leftImage), leftImageRGB, 
+        cv::COLOR_BGRA2RGB);
+    cv::cvtColor(StereolabsToCVMat(rightImage), rightImageRGB, 
+        cv::COLOR_BGRA2RGB);
 
-    // Upload image tensor to GPU.
-    cv::cuda::GpuMat imageGPU;
-    imageGPU.upload(imageFloat);
+    // Convert to float.
+    leftImageRGB.convertTo(leftImageFloatRGB, CV_32FC3, 1.0f / 255.0f);
+    rightImageRGB.convertTo(rightImageFloatRGB, CV_32FC3, 1.0f / 255.0f);
     */
+
+    // TODO: Upload to GPU.
+
+    // TODO: Create tensor.
 
     // TODO: Input tensor to model.
 
     // TODO: Download output tensor fram model.
-
-    // TODO: Convert to grayscale.
 
     return ProcessImagePairRaw(camera);
 }
