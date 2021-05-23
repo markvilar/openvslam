@@ -16,12 +16,7 @@
 ## Overview
 
 [<img src="https://raw.githubusercontent.com/OpenVSLAM-Community/openvslam/main/docs/img/teaser.png" width="640px">](https://arxiv.org/abs/1910.01122)
-
-<<<<<<< HEAD
 [<img src="https://j.gifs.com/81m1QL.gif" width="640px">]
-=======
-<img src="https://j.gifs.com/81m1QL.gif" width="640px">
->>>>>>> 69b2bfaaf032b888f9223f3709fa0926fa7f8837
 
 [**[PrePrint]**](https://arxiv.org/abs/1910.01122) [**[YouTube]**](https://www.youtube.com/watch?v=Ro_s3Lbx5ms)
 

@@ -7,6 +7,8 @@
 #include <DBoW2/FORB.h>
 #include <DBoW2/TemplatedVocabulary.h>
 #else
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <fbow/fbow.h>
 #endif // USE_DBOW2
 

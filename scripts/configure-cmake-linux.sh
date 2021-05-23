@@ -1,9 +1,10 @@
 cmake -S . -B build/ \
-    "-DBUILD_WITH_MARCH_NATIVE=ON" \
+    "-DBUILD_WITH_MARCH_NATIVE=OFF" \
     "-DBUILD_TESTS=OFF" \
     "-DBUILD_EXAMPLES=OFF" \
     "-DUSE_PANGOLIN_VIEWER=ON" \
+    "-DINSTALL_PANGOLIN_VIEWER=ON" \
     "-DUSE_SOCKET_PUBLISHER=OFF" \
     "-DUSE_STACK_TRACE_LOGGER=ON" \
-    "-DBOW_FRAMEWORK=DBoW2" \
-    "-DCMAKE_PREFIX_PATH=/home/martin/opt/libtorch" \
+    "-DBOW_FRAMEWORK=FBoW" \
+    "-DCMAKE_PREFIX_PATH=/home/martin/Libraries/libtorch" \

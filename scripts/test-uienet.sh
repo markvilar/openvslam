@@ -1,25 +1,24 @@
 /home/martin/dev/openvslam/build/apps/SlamApplication \
     -v \
-    "/home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2" \
+    "/home/martin/dev/openvslam/assets/OrbVocabulary.fbow" \
     -c \
-    "/home/martin/dev/openvslam/configurations/zed/underwater-uienet.yaml" \
+    "/home/martin/dev/openvslam/assets/Underwater-UIENet.yaml" \
     -s \
-    "/home/martin/data/Ekne-Survey/SVO/Ekne-01.svo" \
+    "/home/martin/Data/SVO/Ekne-01.svo" \
     --map \
-    "/home/martin/output/SLAM/Debug/Segment-01-Map.msg" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Map.msg" \
     --frame \
-    "/home/martin/output/SLAM/Debug/Segment-01-Frames.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Frames.csv" \
     --keyframe \
-    "/home/martin/output/SLAM/Debug/Segment-01-Keyframes.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Keyframes.csv" \
     --track-times \
-    "/home/martin/output/SLAM/Debug/Track-Times.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Track-Times.csv" \
     --process-times \
-    "/home/martin/output/SLAM/Debug/Process-Times.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Process-Times.csv" \
     --frame-skip 1 \
     --frame-start 2500 \
-    --frame-stop 10000 \
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 3 \
     --uienet \
-    "/home/martin/dev/openvslam/configurations/models/UIENet-CUDA-Script.pt" \
+    "/home/martin/dev/openvslam/assets/UIENet-CUDA-Script.pt" \

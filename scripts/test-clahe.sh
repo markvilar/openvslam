@@ -1,21 +1,28 @@
 /home/martin/dev/openvslam/build/apps/SlamApplication \
-    -v /home/martin/dev/openvslam/configurations/vocabularies/orb_vocab.dbow2 \
-    -c /home/martin/dev/openvslam/configurations/zed/underwater-clahe.yaml \
-    -s /home/martin/data/Ekne-Survey/SVO/Ekne-01.svo \
-    --map "/home/martin/output/SLAM/Debug/Segment-01-Map.msg" \
-    --frame "/home/martin/output/SLAM/Debug/Segment-01-Frames.csv" \
-    --keyframe "/home/martin/output/SLAM/Debug/Segment-01-Keyframes.csv" \
-    --track-times "/home/martin/output/SLAM/Debug/Track-Times.csv" \
-    --process-times "/home/martin/output/SLAM/Debug/Process-Times.csv" \
+    -v \
+    "/home/martin/dev/openvslam/assets/OrbVocabulary.fbow" \
+    -c \
+    "/home/martin/dev/openvslam/assets/Underwater-CLAHE.yaml" \
+    -s \
+    "/home/martin/Data/SVO/Ekne-01.svo" \
+    --map \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Map.msg" \
+    --frame \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Frames.csv" \
+    --keyframe \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Keyframes.csv" \
+    --track-times \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Track-Times.csv" \
+    --process-times \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Process-Times.csv" \
     --frame-skip 1 \
     --frame-start 2500 \
-    --frame-stop 15000 \
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 2 \
-    --clahe-clip 4.0 \
+    --clahe-clip 2.0 \
     --clahe-size 20 \
     --filter \
-    --filter-dia 10 \
+    --filter-dia 7 \
     --filter-color 60 \
     --filter-space 20 \
