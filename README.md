@@ -39,10 +39,7 @@ Please see the `*.cc` files in `./example` directory or check [Simple Tutorial](
 
 We provided [documentation](https://openvslam-community.readthedocs.io/) for installation and tutorial.
 The repository for the ROS wrapper is [openvslam_ros](https://github.com/OpenVSLAM-Community/openvslam_ros).
-<<<<<<< HEAD
-=======
 
->>>>>>> 69b2bfaaf032b888f9223f3709fa0926fa7f8837
 ## Motivation
 
 Visual SLAM is regarded as a next-generation technology for supporting industries such as automotives, robotics, and xR. 
