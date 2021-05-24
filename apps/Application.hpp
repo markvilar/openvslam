@@ -5,18 +5,16 @@
 #include <memory>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/core/cuda.hpp>
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/photo.hpp>
 
 #include "openvslam/system.h"
 #include "openvslam/config.h"
+#include "openvslam/util/yaml.h"
 #include "openvslam/util/stereo_rectifier.h"
-#include "openvslam/util/image_converter.h"
 
+
+#ifdef USE_PANGOLIN_VIEWER
 #include "pangolin_viewer/viewer.h"
+#endif
 
 #include <torch/script.h>
 
@@ -27,6 +25,7 @@
 
 #include "ApplicationConfiguration.hpp"
 #include "Image.hpp"
+#include "ImageProcessing.hpp"
 
 class Application
 {
@@ -40,17 +39,6 @@ private:
     std::tuple<cv::Mat, cv::Mat, double> ProcessImages(
         const std::shared_ptr<sl::Camera>& camera);
 
-    std::pair<cv::Mat, cv::Mat> ProcessImagePairRaw(
-        const std::shared_ptr<sl::Camera>& camera);
-    std::pair<cv::Mat, cv::Mat> ProcessImagePairHE(
-        const std::shared_ptr<sl::Camera>& camera);
-    std::pair<cv::Mat, cv::Mat> ProcessImagePairCLAHE(
-        const std::shared_ptr<sl::Camera>& camera);
-    std::pair<cv::Mat, cv::Mat> ProcessImagePairUIENet(
-        const std::shared_ptr<sl::Camera>& camera);
-
-    void FilterImageBilateral(const cv::Mat& src, cv::Mat& dst);
-
     void Run();
     void TrackFrames();
 
@@ -60,8 +48,10 @@ private:
 private:
     ApplicationConfiguration m_Configuration;
     std::shared_ptr<openvslam::system> m_System;
-    std::shared_ptr<pangolin_viewer::viewer> m_Viewer;
 
+#ifdef USE_PANGOLIN_VIEWER
+    std::shared_ptr<pangolin_viewer::viewer> m_Viewer;
+#endif
     // Tracking.
     std::unique_ptr<std::thread> m_TrackingThread;
     std::shared_ptr<std::vector<float>> m_TrackTimes;

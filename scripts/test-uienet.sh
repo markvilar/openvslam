@@ -22,3 +22,7 @@
     --preprocessing 3 \
     --uienet \
     "/home/martin/dev/openvslam/assets/UIENet-CUDA-Script.pt" \
+    --filter \
+    --filter-dia 7 \
+    --filter-color 60 \
+    --filter-space 20 \

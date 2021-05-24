@@ -19,5 +19,5 @@
     --preprocessing 0 \
     --filter \
     --filter-dia 7 \
-    --filter-color 60 \
+    --filter-color 20 \
     --filter-space 20 \

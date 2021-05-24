@@ -13,6 +13,8 @@ Application::Application(const ApplicationConfiguration& configuration)
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
 
+    // TODO: std::cout << m_System  get_color_order_string() << std::endl;
+
     // Load the Torch model if we want to use it.
     if (configuration.Preprocessing == ImagePreprocessingType::UIENet)
     {
@@ -38,27 +40,37 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
     switch(m_Configuration.Preprocessing)
     {
     case ImagePreprocessingType::None:
-        std::tie(leftImage, rightImage) = ProcessImagePairRaw(camera);
+        std::tie(leftImage, rightImage) = 
+            StereoImageProcessor::ProcessImagePairRaw(camera);
         break;
     case ImagePreprocessingType::HistogramEqualization:
-        std::tie(leftImage, rightImage) = ProcessImagePairHE(camera);
+        std::tie(leftImage, rightImage) = 
+            StereoImageProcessor::ProcessImagePairHE(camera);
         break;
     case ImagePreprocessingType::CLAHE:
-        std::tie(leftImage, rightImage) = ProcessImagePairCLAHE(camera);
+        std::tie(leftImage, rightImage) = 
+            StereoImageProcessor::ProcessImagePairCLAHE(camera, 
+            m_Configuration.CLAHEClip, m_Configuration.CLAHESize);
         break;
     case ImagePreprocessingType::UIENet:
-        std::tie(leftImage, rightImage) = ProcessImagePairUIENet(camera);
+        std::tie(leftImage, rightImage) = 
+            StereoImageProcessor::ProcessImagePairUIENet(camera, m_UIENet);
         break;
     default:
-        std::tie(leftImage, rightImage) = ProcessImagePairRaw(camera);
+        std::tie(leftImage, rightImage) = 
+            StereoImageProcessor::ProcessImagePairRaw(camera);
         break;
     }
 
     if (m_Configuration.Filter)
     {
         // Noise reduction filter.
-        FilterImageBilateral(leftImage, leftImageFiltered);
-        FilterImageBilateral(rightImage, rightImageFiltered);
+        StereoImageProcessor::FilterImageBilateral(leftImage, 
+            leftImageFiltered, m_Configuration.FilterDiameter, 
+            m_Configuration.FilterColor, m_Configuration.FilterSpace);
+        StereoImageProcessor::FilterImageBilateral(rightImage, 
+            rightImageFiltered, m_Configuration.FilterDiameter, 
+            m_Configuration.FilterColor, m_Configuration.FilterSpace);
     }
     else
     {
@@ -76,131 +88,29 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
     return { leftImageRectified, rightImageRectified, processTime };
 }
 
-std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairRaw(
-    const std::shared_ptr<sl::Camera>& camera)
-{
-	sl::Mat leftImage, rightImage;
-
-    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-
-    auto leftImageGray = StereolabsToCVMat(leftImage);
-    auto rightImageGray = StereolabsToCVMat(rightImage);
-
-    return { leftImageGray.clone(), rightImageGray.clone() };
-}
-
-std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairHE(
-    const std::shared_ptr<sl::Camera>& camera)
-{
-   	sl::Mat leftImage, rightImage;
-	cv::Mat leftImageEqualized, rightImageEqualized;
-
-    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-
-    auto leftImageGray = StereolabsToCVMat(leftImage);
-    auto rightImageGray = StereolabsToCVMat(rightImage);
-
-    openvslam::util::histogram_equalization(leftImageGray, 
-        leftImageEqualized);
-    openvslam::util::histogram_equalization(rightImageGray, 
-        rightImageEqualized);
-
-    return { leftImageEqualized, rightImageEqualized };
-}
-
-std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairCLAHE(
-    const std::shared_ptr<sl::Camera>& camera)
-{
-   	sl::Mat leftImage, rightImage;
-	cv::Mat leftImageEqualized, rightImageEqualized;
-
-    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED_GRAY, 
-        sl::MEM::CPU);
-
-    auto leftImageGray = StereolabsToCVMat(leftImage);
-    auto rightImageGray = StereolabsToCVMat(rightImage);
-
-    openvslam::util::clahe(leftImageGray, leftImageEqualized, 
-        m_Configuration.CLAHEClip, 
-        { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
-
-    openvslam::util::clahe(rightImageGray, rightImageEqualized, 
-        m_Configuration.CLAHEClip, 
-        { m_Configuration.CLAHESize, m_Configuration.CLAHESize });
-
-    return { leftImageEqualized, rightImageEqualized };
-}
-
-std::pair<cv::Mat, cv::Mat> Application::ProcessImagePairUIENet(
-    const std::shared_ptr<sl::Camera>& camera)
-{
-   	sl::Mat leftImage, rightImage;
-    cv::Mat leftImageRGB, rightImageRGB;
-    cv::Mat leftImageFloatRGB, rightImageFloatRGB;
-
-    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED, 
-        sl::MEM::CPU);
-    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED, 
-        sl::MEM::CPU);
-
-    auto leftTensor = StereolabsToTensor(leftImage);
-    auto rightTensor = StereolabsToTensor(rightImage);
-    /*
-    // Create OpenCV Mat.
-    cv::cvtColor(StereolabsToCVMat(leftImage), leftImageRGB, 
-        cv::COLOR_BGRA2RGB);
-    cv::cvtColor(StereolabsToCVMat(rightImage), rightImageRGB, 
-        cv::COLOR_BGRA2RGB);
-
-    // Convert to float.
-    leftImageRGB.convertTo(leftImageFloatRGB, CV_32FC3, 1.0f / 255.0f);
-    rightImageRGB.convertTo(rightImageFloatRGB, CV_32FC3, 1.0f / 255.0f);
-    */
-
-    // TODO: Upload to GPU.
-
-    // TODO: Create tensor.
-
-    // TODO: Input tensor to model.
-
-    // TODO: Download output tensor fram model.
-
-    return ProcessImagePairRaw(camera);
-}
-
-void Application::FilterImageBilateral(const cv::Mat& src, cv::Mat& dst)
-{
-    cv::bilateralFilter(src, dst, m_Configuration.FilterDiameter, 
-        m_Configuration.FilterColor, m_Configuration.FilterSpace);
-}
-
 void Application::Run()
 {
 	// Build and start SLAM process.
 	m_System->startup();
 
 	// Create viewer.
+#ifdef USE_PANGOLIN_VIEWER
 	m_Viewer = std::make_shared<pangolin_viewer::viewer>(
         openvslam::util::yaml_optional_ref(
             m_Configuration.OpenVSLAMConfiguration->yaml_node_, 
             "PangolinViewer"), 
         &*m_System, m_System->get_frame_publisher(), 
         m_System->get_map_publisher());
+#endif
 
     // Start tracking thread.
     m_TrackingThread = std::make_unique<std::thread>(&Application::TrackFrames,
         this);
 
 	// Run the viewer in the current thread.
+#ifdef USE_PANGOLIN_VIEWER
 	m_Viewer->run();
+#endif
 
     // Join tracking thread.
 	m_TrackingThread->join();
@@ -334,7 +244,9 @@ void Application::TrackFrames()
     // Automatically close the viewer.
     if (m_Configuration.Terminate) 
     {
+#ifdef USE_PANGOLIN_VIEWER
         m_Viewer->request_terminate();
+#endif
     }
 }
 

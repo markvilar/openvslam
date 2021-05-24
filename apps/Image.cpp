@@ -1,5 +1,56 @@
 #include "Image.hpp"
 
+#include <string>
+#include <sstream>
+
+std::string CVMatTypeToStr(int type) 
+{
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
+std::string ToString(sl::Mat& mat)
+{
+    std::stringstream ss;
+    ss << mat.getInfos() << ", " << mat.getChannels() << ", " 
+        << mat.getHeight() << ", " << mat.getWidth();
+    return ss.str();
+}
+
+std::string ToString(const cv::Mat& mat)
+{
+    std::stringstream ss;
+    ss << mat.rows << ", " << mat.cols << ", " << mat.channels() << ", " 
+        << mat.total() * mat.elemSize() << ", " << CVMatTypeToStr(mat.type());
+    return ss.str();
+}
+
+std::string ToString(const torch::Tensor& tensor)
+{
+    std::stringstream ss;
+    ss << tensor.data_ptr() << ", " << tensor.sizes() << ", " 
+        << tensor.strides() << ", " << tensor.nbytes();
+    return ss.str();
+}
+
 // ---- Stereolabs / CV -------------------------------------------------------
 
 auto StereolabsToCVMatType(const sl::MAT_TYPE type)
@@ -47,40 +98,44 @@ cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& mat)
 
 // ---- Stereolabs / Torch ----------------------------------------------------
 
-torch::Tensor StereolabsToTensor(const sl::Mat& mat)
+torch::Tensor StereolabsToTensor(const sl::Mat& mat, const int device=0, 
+    const bool requiresGrad=false)
 {
     // std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols};
-    std::vector<int64_t> dims = { 1, mat.getChannels(), mat.getHeight(), 
-        mat.getWidth() };
-    // int64 step = im.step; // / sizeof(float);
-    int64 step = mat.getStep();
-    std::vector<int64_t> strides = { 1, 1, step, mat.getChannels() };
+    std::vector<int64_t> dims = { 1, 
+        static_cast<int64_t>(mat.getChannels()), 
+        static_cast<int64_t>(mat.getHeight()), 
+        static_cast<int64_t>(mat.getWidth()) };
+    std::vector<int64_t> strides = { 1, 1, 
+        static_cast<int64_t>(mat.getStepBytes()), 
+        static_cast<int64_t>(mat.getChannels()) };
     auto options = torch::TensorOptions().dtype(torch::kUInt8).device(
-        torch::kCUDA);
+        torch::kCUDA, device);
     return torch::from_blob(mat.getPtr<sl::uchar1>(sl::MEM::GPU), dims, 
         strides,  options);
 }
 
 sl::Mat TensorToStereolabs(const torch::Tensor& tensor)
 {
+    return sl::Mat();
 }
 
 // ---- CV / Torch ------------------------------------------------------------
 
 
 
-cv::Mat TensorToCVMat(const torch::Tensor& tensor) 
+cv::Mat TensorToCVMat(torch::Tensor& tensor) 
 {
-    auto output = tensor.permute({ 0, 2, 3, 1 });
-    output = output.squeeze(0).detach();
-    output = output.to(torch::kU8).to(torch::kCPU);
-
-    auto sizes = output.sizes();
-    cv::Mat mat{cv::Size{static_cast<int>(sizes[1]), 
-        static_cast<int>(sizes[0]) }, CV_8UC(static_cast<int>(sizes[2])), 
-        output.data_ptr()};
-
-    return mat;
+    tensor = tensor.squeeze().detach();
+    tensor = tensor.permute({1, 2, 0}).contiguous();
+    tensor = tensor.mul(255).clamp(0, 255).to(torch::kU8);
+    tensor = tensor.to(torch::kCPU);
+    int64_t height = tensor.size(0);
+    int64_t width = tensor.size(1);
+    tensor = tensor.reshape({width * height * 3});
+    cv::Mat mat = cv::Mat(cv::Size(width, height), CV_8UC3, 
+        tensor.data_ptr<uchar>());
+    return mat.clone();
 }
 
 torch::Tensor CVMatToTensor(const cv::Mat& mat)
@@ -88,7 +143,6 @@ torch::Tensor CVMatToTensor(const cv::Mat& mat)
     std::vector<int64_t> dims = { 1, mat.channels(), mat.rows, mat.cols };
     int64 step = mat.step; // / sizeof(float);
     std::vector<int64_t> strides = { 1, 1, step, mat.channels() };
-    auto options = torch::TensorOptions().dtype(torch::kUInt8)
-        .device(torch::kCUDA);
+    auto options = torch::TensorOptions().dtype(torch::kUInt8);
     return torch::from_blob(mat.data, dims, strides,  options);
 }

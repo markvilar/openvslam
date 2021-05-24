@@ -55,8 +55,8 @@ Feature:
     max_num_keypoints: 1000 #
     scale_factor: 1.2
     num_levels: 8
-    ini_fast_threshold: 10 # Threshold for first try
-    min_fast_threshold: 2 # Threshold for second try
+    ini_fast_threshold: 4 # Threshold for first try
+    min_fast_threshold: 1 # Threshold for second try
 
 # -----------------------------------------------------------------------------
 # ---- Depth threshold --------------------------------------------------------
