@@ -23,6 +23,6 @@
     --uienet \
     "/home/martin/dev/openvslam/assets/UIENet-CUDA-Script.pt" \
     --filter \
-    --filter-dia 7 \
-    --filter-color 60 \
+    --filter-dia 10 \
+    --filter-color 20 \
     --filter-space 20 \

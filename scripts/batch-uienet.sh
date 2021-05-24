@@ -129,7 +129,7 @@
     -c \
     "/home/martin/dev/openvslam/assets/Underwater-UIENet.yaml" \
     -s \
-    "/home/martin/data/Ekne-Survey/SVO/Ekne-01.svo" \
+    "/home/martin/Data/SVO/Ekne-01.svo" \
     --map \
     "/home/martin/Data/Output/SLAM-UIENet/Run-05-Map.msg" \
     --frame \
