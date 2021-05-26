@@ -20,7 +20,3 @@
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 1 \
-    --filter \
-    --filter-dia 7 \
-    --filter-color 60 \
-    --filter-space 20 \

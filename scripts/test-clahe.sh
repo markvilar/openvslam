@@ -16,13 +16,13 @@
     --process-times \
     "/home/martin/Data/Output/SLAM-Debug/CLAHE-Process-Times.csv" \
     --frame-skip 1 \
-    --frame-start 2500 \
+    --frame-start 4500 \
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 2 \
     --clahe-clip 2.0 \
     --clahe-size 20 \
     --filter \
-    --filter-dia 7 \
+    --filter-dia 10 \
     --filter-color 60 \
     --filter-space 20 \

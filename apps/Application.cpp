@@ -13,8 +13,6 @@ Application::Application(const ApplicationConfiguration& configuration)
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
 
-    // TODO: std::cout << m_System  get_color_order_string() << std::endl;
-
     // Load the Torch model if we want to use it.
     if (configuration.Preprocessing == ImagePreprocessingType::UIENet)
     {
