@@ -9,15 +9,13 @@
 
 |
 
-.. raw:: html
-
-    <div style="position: relative; padding-bottom: 56.25%;">
-    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/Ro_s3Lbx5ms" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
+.. image:: https://j.gifs.com/81m1QL.gif
+    :width: 640px
+    :align: center
 
 |
 
-This is the `OpenVSLAM <https://github.com/xdspacelab/openvslam>`_ documentation.
+This is the `OpenVSLAM <https://github.com/OpenVSLAM-Community/openvslam>`_ documentation.
 
 Contents
 --------
@@ -29,6 +27,7 @@ Contents
     ./installation
     ./simple_tutorial
     ./example
+    ./parameters
     ./docker
     ./ros
     ./trouble_shooting

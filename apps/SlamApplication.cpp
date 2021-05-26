@@ -32,11 +32,25 @@ int main(int argc, char* argv[])
         "", "keyframe", "Store the keyframe trajectory at this path.", "");
     auto optionTrackTimesPath = options.add<popl::Value<std::string>>(
         "", "track-times", "Store the track times at this path.", "");
+    auto optionProcessTimesPath = options.add<popl::Value<std::string>>(
+        "", "process-times", "Store the process times at this path.", "");
+
+    auto optionFilter = options.add<popl::Switch>(
+        "", "filter", "Filter diameter.");
+	auto optionFilterDiameter = options.add<popl::Value<unsigned int>>(
+        "", "filter-dia", "Filter diameter.", 4);
+	auto optionFilterColor = options.add<popl::Value<unsigned int>>(
+        "", "filter-color", "Filter color dissimilarity.", 20);
+	auto optionFilterSpace = options.add<popl::Value<unsigned int>>(
+        "", "filter-space", "Filter space dissimilarity.", 40);
 
 	auto optionFrameSkip = options.add<popl::Value<unsigned int>>(
         "", "frame-skip", "Frame skip interval.", 1);
 	auto optionFrameStart = options.add<popl::Value<unsigned int>>(
         "", "frame-start", "Start frame.", 0);
+	auto optionFrameStop = options.add<popl::Value<unsigned int>>(
+        "", "frame-stop", "Stop frame.", 30000);
+
 	auto optionRealtime = options.add<popl::Switch>(
         "", "realtime", "Not waiting for next frame.");
 	auto optionAutoTerminate = options.add<popl::Switch>(
@@ -57,6 +71,9 @@ int main(int argc, char* argv[])
         "", "clahe-clip", "CLAHE clip value.", 8.0);
     auto optionCLAHESize= options.add<popl::Value<unsigned int>>(
         "", "clahe-size", "CLAHE clip value.", 40);
+
+    auto optionUIENetPath = options.add<popl::Value<std::string>>(
+        "", "uienet", "Path to the UIENet model file.", "");
    
     // Parse arguments.
     try 
@@ -112,10 +129,13 @@ int main(int argc, char* argv[])
     configuration.KeyframeTrajectoryPath =
         optionKeyframeTrajectoryPath->value();
     configuration.TrackTimesPath = optionTrackTimesPath->value();
+    configuration.ProcessTimesPath = optionProcessTimesPath->value();
+
 
     // Settings.
     configuration.FrameSkip = optionFrameSkip->value();
     configuration.FrameStart = optionFrameStart->value();
+    configuration.FrameStop = optionFrameStop->value();
     configuration.Realtime = optionRealtime->value();
     configuration.Terminate = optionAutoTerminate->value();
     configuration.Debug = optionDebug->value();
@@ -129,6 +149,13 @@ int main(int argc, char* argv[])
         optionPreprocessing->value());
     configuration.CLAHEClip = optionCLAHEClip->value();
     configuration.CLAHESize = optionCLAHESize->value();
+    configuration.UIENetPath = optionUIENetPath->value();
+
+    // Filter.
+    configuration.Filter = optionFilter->value();
+    configuration.FilterDiameter = optionFilterDiameter->value();
+    configuration.FilterColor = optionFilterColor->value();
+    configuration.FilterSpace = optionFilterSpace->value();
 
     // OpenVSLAM configuration.
     configuration.OpenVSLAMConfiguration = std::make_shared<openvslam::config>(

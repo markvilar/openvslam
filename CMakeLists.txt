@@ -58,7 +58,6 @@ endif()
 # ---- Set options for debugging ----------------------------------------------
 # -----------------------------------------------------------------------------
 
-
 set(USE_CCACHE ON CACHE BOOL "Use ccache to accelerate build")
 find_program(CCACHE_EXE ccache)
 if(USE_CCACHE AND CCACHE_EXE AND NOT MSVC)
@@ -119,6 +118,21 @@ else()
     message(STATUS "Architecture-aware optimization (-march=native): DISABLED")
 endif()
 
+# Note: add_compile_options() accepts only "simple" generator-expressions :-(
+if(MSVC)
+    # C4251: DLL export, C4244: floating->integer, C4305: double->float, C4267: size_t->any, C4127: constant condition
+    add_compile_options(/W4 $<$<CONFIG:Debug>:/MTd>;$<$<CONFIG:Release>:/MT> 
+        /source-charset:utf-8 /execution-charset:utf-8 /wd4251 /wd4244 /wd4305 
+        /wd4267 /wd4127)
+    add_compile_options("$<$<CONFIG:Debug>:/Zo>;$<$<CONFIG:Release>:/O2>;$<$<CONFIG:None>:/O2>")
+else()
+    add_compile_options(-Wall -Wextra)
+    add_compile_options(
+        "$<$<CONFIG:Debug>:-Og>"
+        "$<$<CONFIG:Release>:-O3>"
+        "$<$<CONFIG:None>:-O3>")
+endif()
+
 # -----------------------------------------------------------------------------
 # ---- Find dependencies ------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -130,8 +144,8 @@ find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 if(NOT TARGET OpenMP::OpenMP_CXX)
     add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
-    set_property(TARGET OpenMP::OpenMP_CXX
-                 PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
+    set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_LINK_LIBRARIES 
+        ${OpenMP_CXX_FLAGS} Threads::Threads)
 endif()
 
 # Eigen
@@ -167,7 +181,7 @@ set(OPENVSLAM_PROJECT_CONFIG
 set(OPENVSLAM_TARGETS_EXPORT_NAME ${PROJECT_NAME}Targets)
 set(OPENVSLAM_CONFIG_INSTALL_DIR lib/cmake/${PROJECT_NAME})
 set(OPENVSLAM_NAMESPACE "${PROJECT_NAME}::")
-set(OPENVSLAM_VERSION 0.1.1)
+set(OPENVSLAM_VERSION 0.2.1)
 
 # Create a version config file
 write_basic_package_version_file(${OPENVSLAM_VERSION_CONFIG}
@@ -194,9 +208,6 @@ set(INCLUDES_DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 # -----------------------------------------------------------------------------
 # ---- Build selection --------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-# Third-party.
-#add_subdirectory(3rd)
 
 # Library.
 add_subdirectory(src)
