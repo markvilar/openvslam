@@ -16,8 +16,8 @@ public:
     std::string MapPath;
     std::string FrameTrajectoryPath;
     std::string KeyframeTrajectoryPath;
-    std::string TrackTimesPath;
-    std::string ProcessTimesPath;
+    std::string ProfilingPath;
+    std::string KeyPointDataPath;
 
     uint32_t FrameSkip = 1;
     uint32_t FrameStart = 0;

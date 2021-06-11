@@ -1,23 +1,26 @@
 /home/martin/dev/openvslam/build/apps/SlamApplication \
-    -v /home/martin/dev/openvslam/assets/OrbVocabulary.fbow \
-    -c /home/martin/dev/openvslam/assets/Underwater-Raw.yaml \
-    -s /home/martin/Data/SVO/Ekne-01.svo \
+    -v \
+    "/home/martin/dev/openvslam/assets/OrbVocabulary.fbow" \
+    -c \
+    "/home/martin/dev/openvslam/assets/Underwater-BLF.yaml" \
+    -s \
+    "/home/martin/Data/SVO/Ekne-01.svo" \
     --map \
-    "/home/martin/Data/Output/SLAM-Debug/Raw-Map.msg" \
+    "/home/martin/Data/Output/SLAM-Debug/BLF-Map.msg" \
     --frame \
-    "/home/martin/Data/Output/SLAM-Debug/Raw-Frames.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/BLF-Frames.csv" \
     --keyframe \
-    "/home/martin/Data/Output/SLAM-Debug/Raw-Keyframes.csv" \
-    --track-times \
-    "/home/martin/Data/Output/SLAM-Debug/Raw-Track-Times.csv" \
-    --process-times \
-    "/home/martin/Data/Output/SLAM-Debug/Raw-Process-Times.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/BLF-Keyframes.csv" \
+    --profiling \
+    "/home/martin/Data/Output/SLAM-Debug/BLF-Profiling.csv" \
+    --keypoint \
+    "/home/martin/Data/Output/SLAM-Debug/BLF-Keypoints.json" \
     --frame-skip 1 \
-    --frame-start 2500 \
+    --frame-start 4500 \
     --eval-log --auto-term \
-    --bias 51057.171 \
+    --bias 54142.8 \
     --preprocessing 0 \
     --filter \
     --filter-dia 7 \
-    --filter-color 20 \
+    --filter-color 60 \
     --filter-space 20 \

@@ -42,8 +42,8 @@ private:
     void Run();
     void TrackFrames();
 
-    void SaveTrackTimes();
-    void SaveProcessTimes();
+    void SaveProfilingTimes();
+    void SaveKeyPointData();
 
 private:
     ApplicationConfiguration m_Configuration;
@@ -56,6 +56,9 @@ private:
     std::unique_ptr<std::thread> m_TrackingThread;
     std::shared_ptr<std::vector<float>> m_TrackTimes;
     std::shared_ptr<std::vector<float>> m_ProcessTimes;
+    std::shared_ptr<std::vector<cv::KeyPoint>> m_KeyPoints;
+    std::shared_ptr<std::vector<int>> m_Matches;
+
 
     // Rectifier.
     openvslam::util::stereo_rectifier m_Rectifier;

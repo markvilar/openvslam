@@ -11,10 +11,10 @@
     "/home/martin/Data/Output/SLAM-Debug/UIENet-Frames.csv" \
     --keyframe \
     "/home/martin/Data/Output/SLAM-Debug/UIENet-Keyframes.csv" \
-    --track-times \
-    "/home/martin/Data/Output/SLAM-Debug/UIENet-Track-Times.csv" \
+    --profiling \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Profiling.csv" \
     --process-times \
-    "/home/martin/Data/Output/SLAM-Debug/UIENet-Process-Times.csv" \
+    "/home/martin/Data/Output/SLAM-Debug/UIENet-Keypoints.csv" \
     --frame-skip 1 \
     --frame-start 2500 \
     --eval-log --auto-term \

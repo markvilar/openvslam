@@ -11,12 +11,12 @@
     "/home/martin/Data/Output/SLAM-Debug/CLAHE-Frames.csv" \
     --keyframe \
     "/home/martin/Data/Output/SLAM-Debug/CLAHE-Keyframes.csv" \
-    --track-times \
-    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Track-Times.csv" \
-    --process-times \
-    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Process-Times.csv" \
+    --profiling \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Profiling.csv" \
+    --keypoint \
+    "/home/martin/Data/Output/SLAM-Debug/CLAHE-Keypoints.json" \
     --frame-skip 1 \
-    --frame-start 4500 \
+    --frame-start 2500 \
     --eval-log --auto-term \
     --bias 51057.171 \
     --preprocessing 2 \

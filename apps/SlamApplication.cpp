@@ -30,10 +30,10 @@ int main(int argc, char* argv[])
         "", "frame", "Store the frame trajectory at this path.", "");
 	auto optionKeyframeTrajectoryPath =  options.add<popl::Value<std::string>>(
         "", "keyframe", "Store the keyframe trajectory at this path.", "");
-    auto optionTrackTimesPath = options.add<popl::Value<std::string>>(
-        "", "track-times", "Store the track times at this path.", "");
-    auto optionProcessTimesPath = options.add<popl::Value<std::string>>(
-        "", "process-times", "Store the process times at this path.", "");
+    auto optionProfilingPath = options.add<popl::Value<std::string>>(
+        "", "profiling", "Store profiling times at this path.", "");
+    auto optionKeyPointDataPath = options.add<popl::Value<std::string>>(
+        "", "keypoint", "Store keypoint data at this path.", "");
 
     auto optionFilter = options.add<popl::Switch>(
         "", "filter", "Filter diameter.");
@@ -128,8 +128,8 @@ int main(int argc, char* argv[])
     configuration.FrameTrajectoryPath = optionFrameTrajectoryPath->value();
     configuration.KeyframeTrajectoryPath =
         optionKeyframeTrajectoryPath->value();
-    configuration.TrackTimesPath = optionTrackTimesPath->value();
-    configuration.ProcessTimesPath = optionProcessTimesPath->value();
+    configuration.ProfilingPath = optionProfilingPath->value();
+    configuration.KeyPointDataPath = optionKeyPointDataPath->value();
 
 
     // Settings.

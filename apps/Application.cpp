@@ -125,8 +125,8 @@ void Application::Run()
             m_Configuration.KeyframeTrajectoryPath, 
             openvslam::io::trajectory_format::csv);
 
-        SaveTrackTimes();
-        SaveProcessTimes();
+        SaveProfilingTimes();
+        SaveKeyPointData();
 	}
 
 	// Output map information.
@@ -157,8 +157,15 @@ void Application::TrackFrames()
 	unsigned int frame = m_Configuration.FrameStart;
     double timestamp = 0.0;
     double fps = camera->getInitParameters().camera_fps;
-    m_TrackTimes = std::make_shared<std::vector<float>>(framesTotal, 0.0);
-    m_ProcessTimes = std::make_shared<std::vector<float>>(framesTotal, 0.0);
+
+    // Profiling information.
+    m_TrackTimes = std::make_shared<std::vector<float>>();
+    m_ProcessTimes = std::make_shared<std::vector<float>>();
+
+    // Keypoint information. TODO: Needs to be vector of vector.
+    m_KeyPoints = std::make_shared<std::vector<cv::KeyPoint>>();
+    m_KeyPoints->reserve(framesTotal);
+    m_Matches = std::make_shared<std::vector<int>>(framesTotal, -1);
 
 	if (m_Configuration.FrameStart < framesTotal)
 	{
@@ -211,8 +218,8 @@ void Application::TrackFrames()
             <std::chrono::duration<double>>(trackEnd - trackStart).count();
         if (frame % m_Configuration.FrameSkip == 0) 
         {
-            m_ProcessTimes->insert(m_ProcessTimes->begin() + frame, processTime);
-            m_TrackTimes->insert(m_TrackTimes->begin() + frame, trackTime);
+            m_ProcessTimes->push_back(processTime);
+            m_TrackTimes->push_back(trackTime);
         }
 
         // Wait until the timestamp of the next frame.
@@ -248,30 +255,42 @@ void Application::TrackFrames()
     }
 }
 
-void Application::SaveTrackTimes()
+void Application::SaveProfilingTimes()
 {
-    std::ofstream ofs(m_Configuration.TrackTimesPath, std::ios::out);
+    std::ofstream ofs(m_Configuration.ProfilingPath, std::ios::out);
     if (ofs.is_open()) 
     {
-        ofs << "Track-Time" << std::endl;
-        for (const auto trackTime : *m_TrackTimes) 
+        auto trackSize = m_TrackTimes->size();
+        auto processSize = m_ProcessTimes->size();
+        assert(trackSize == processSize);
+
+        ofs << "Index, Track-Time, Process-Time" << std::endl;
+        for (unsigned int i = 0; i < trackSize; i++) 
         {
-            ofs << trackTime << std::endl;
+            ofs << i << ", " << (*m_TrackTimes)[i] << ", " 
+                << (*m_ProcessTimes)[i] << std::endl;
         }
         ofs.close();
     }
 }
 
-void Application::SaveProcessTimes()
+void Application::SaveKeyPointData()
 {
-    std::ofstream ofs(m_Configuration.ProcessTimesPath, std::ios::out);
+    std::ofstream ofs(m_Configuration.KeyPointDataPath, std::ios::out);
     if (ofs.is_open()) 
     {
+        auto keyPointSize = m_KeyPoints->size();
+        auto matchSize = m_Matches->size();
+        assert(keyPointSize == matchSize);
+
+        /*
         ofs << "Process-Time" << std::endl;
         for (const auto processTime : *m_ProcessTimes) 
         {
             ofs << processTime << std::endl;
         }
+        */
+
         ofs.close();
     }
 }

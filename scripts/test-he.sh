@@ -11,10 +11,10 @@
     "/home/martin/Data/Output/SLAM-Debug/HE-Frames.csv" \
     --keyframe \
     "/home/martin/Data/Output/SLAM-Debug/HE-Keyframes.csv" \
-    --track-times \
-    "/home/martin/Data/Output/SLAM-Debug/HE-Track-Times.csv" \
-    --process-times \
-    "/home/martin/Data/Output/SLAM-Debug/HE-Process-Times.csv" \
+    --profiling \
+    "/home/martin/Data/Output/SLAM-Debug/HE-Profiling.csv" \
+    --keypoint \
+    "/home/martin/Data/Output/SLAM-Debug/HE-Keypoints.csv" \
     --frame-skip 1 \
     --frame-start 2500 \
     --eval-log --auto-term \

@@ -118,9 +118,8 @@ public:
 
     //! Feed a stereo frame to SLAM system
     //! (Note: Left and Right images must be stereo-rectified)
-    Mat44_t feed_stereo_frame(const cv::Mat& left_img, 
-        const cv::Mat& right_img, const double timestamp, 
-        const cv::Mat& mask = cv::Mat{});
+    Mat44_t feed_stereo_frame(const cv::Mat& left_img, const cv::Mat& right_img, 
+        const double timestamp, const cv::Mat& mask = cv::Mat{});
 
     //! Feed an RGBD frame to SLAM system
     //! (Note: RGB and Depth images must be aligned)

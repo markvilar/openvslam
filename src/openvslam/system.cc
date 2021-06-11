@@ -311,7 +311,8 @@ Mat44_t system::feed_stereo_frame(const cv::Mat& left_img,
     if (tracker_->tracking_state_ == tracker_state_t::Tracking) 
     {
         map_publisher_->set_current_cam_pose(cam_pose_cw);
-        map_publisher_->set_current_cam_pose_wc(tracker_->curr_frm_.get_cam_pose_inv());
+        map_publisher_->set_current_cam_pose_wc(tracker_->curr_frm_
+            .get_cam_pose_inv());
     }
 
     return cam_pose_cw;
