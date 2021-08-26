@@ -3,8 +3,7 @@ cmake -S . -B build/ \
     "-DBUILD_TESTS=OFF" \
     "-DBUILD_EXAMPLES=OFF" \
     "-DUSE_PANGOLIN_VIEWER=ON" \
-    "-DINSTALL_PANGOLIN_VIEWER=ON" \
+    "-DINSTALL_PANGOLIN_VIEWER=OFF" \
     "-DUSE_SOCKET_PUBLISHER=OFF" \
     "-DUSE_STACK_TRACE_LOGGER=ON" \
-    "-DBOW_FRAMEWORK=FBoW" \
-    "-DCMAKE_PREFIX_PATH=/home/martin/Libraries/libtorch" \
+    "-DBOW_FRAMEWORK=DBoW2" \

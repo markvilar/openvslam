@@ -16,8 +16,6 @@
 #include "pangolin_viewer/viewer.h"
 #endif
 
-#include <torch/script.h>
-
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
@@ -59,9 +57,6 @@ private:
 
     // Rectifier.
     openvslam::util::stereo_rectifier m_Rectifier;
-
-    // UIENet.
-    std::shared_ptr<torch::jit::script::Module> m_UIENet;
 
     static Application* s_Instance;
     friend int main(int argc, char** argv);

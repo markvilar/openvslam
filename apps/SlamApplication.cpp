@@ -149,7 +149,6 @@ int main(int argc, char* argv[])
         optionPreprocessing->value());
     configuration.CLAHEClip = optionCLAHEClip->value();
     configuration.CLAHESize = optionCLAHESize->value();
-    configuration.UIENetPath = optionUIENetPath->value();
 
     // Filter.
     configuration.Filter = optionFilter->value();

@@ -65,9 +65,6 @@ else()
     SET(ZED_LIBS ${ZED_STATIC_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_LIBRARY})
 endif()
 
-# Torch
-find_package(Torch REQUIRED)
-
 # -----------------------------------------------------------------------------
 # ---- SlamApplication --------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -93,7 +90,6 @@ target_link_libraries(SlamApplication PRIVATE
 	${PROJECT_NAME} 
 	${ZED_LIBS} 
 	${CUDA_LIBRARIES}
-    ${TORCH_LIBRARIES}
 	opencv_imgcodecs
 	opencv_videoio)
 
@@ -102,33 +98,3 @@ if(USE_PANGOLIN_VIEWER)
     target_compile_definitions(SlamApplication PRIVATE USE_PANGOLIN_VIEWER)
     target_link_libraries(SlamApplication PRIVATE pangolin_viewer)
 endif()
-
-# -----------------------------------------------------------------------------
-# ---- TorchTrace -------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-add_executable(TorchTrace TorchTrace.cpp)
-
-target_compile_features(TorchTrace PRIVATE cxx_std_17)
-
-target_link_libraries(TorchTrace PRIVATE
-    "${TORCH_LIBRARIES}"
-	opencv_imgcodecs
-	opencv_videoio)
-
-target_include_directories(TorchTrace PUBLIC )
-
-# -----------------------------------------------------------------------------
-# ---- TorchScript-------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-add_executable(TorchScript TorchScript.cpp)
-
-target_compile_features(TorchScript PRIVATE cxx_std_17)
-
-target_link_libraries(TorchScript PRIVATE
-    "${TORCH_LIBRARIES}"
-	opencv_imgcodecs
-	opencv_videoio)
-
-target_include_directories(TorchScript PUBLIC )

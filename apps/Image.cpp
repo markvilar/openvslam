@@ -27,30 +27,6 @@ std::string CVMatTypeToStr(int type)
   return r;
 }
 
-std::string ToString(sl::Mat& mat)
-{
-    std::stringstream ss;
-    ss << mat.getInfos() << ", " << mat.getChannels() << ", " 
-        << mat.getHeight() << ", " << mat.getWidth();
-    return ss.str();
-}
-
-std::string ToString(const cv::Mat& mat)
-{
-    std::stringstream ss;
-    ss << mat.rows << ", " << mat.cols << ", " << mat.channels() << ", " 
-        << mat.total() * mat.elemSize() << ", " << CVMatTypeToStr(mat.type());
-    return ss.str();
-}
-
-std::string ToString(const torch::Tensor& tensor)
-{
-    std::stringstream ss;
-    ss << tensor.data_ptr() << ", " << tensor.sizes() << ", " 
-        << tensor.strides() << ", " << tensor.nbytes();
-    return ss.str();
-}
-
 // ---- Stereolabs / CV -------------------------------------------------------
 
 auto StereolabsToCVMatType(const sl::MAT_TYPE type)
@@ -94,55 +70,4 @@ cv::cuda::GpuMat StereolabsToCVGpuMat(const sl::Mat& mat)
         StereolabsToCVMatType(mat.getDataType()),
         mat.getPtr<sl::uchar1>(sl::MEM::GPU), 
         mat.getStepBytes(sl::MEM::GPU));
-}
-
-// ---- Stereolabs / Torch ----------------------------------------------------
-
-torch::Tensor StereolabsToTensor(const sl::Mat& mat, const int device=0, 
-    const bool requiresGrad=false)
-{
-    // std::vector<int64_t> dims = {1, mat.channels(), mat.rows, mat.cols};
-    std::vector<int64_t> dims = { 1, 
-        static_cast<int64_t>(mat.getChannels()), 
-        static_cast<int64_t>(mat.getHeight()), 
-        static_cast<int64_t>(mat.getWidth()) };
-    std::vector<int64_t> strides = { 1, 1, 
-        static_cast<int64_t>(mat.getStepBytes()), 
-        static_cast<int64_t>(mat.getChannels()) };
-    auto options = torch::TensorOptions().dtype(torch::kUInt8).device(
-        torch::kCUDA, device);
-    return torch::from_blob(mat.getPtr<sl::uchar1>(sl::MEM::GPU), dims, 
-        strides,  options);
-}
-
-sl::Mat TensorToStereolabs(const torch::Tensor& tensor)
-{
-    return sl::Mat();
-}
-
-// ---- CV / Torch ------------------------------------------------------------
-
-
-
-cv::Mat TensorToCVMat(torch::Tensor& tensor) 
-{
-    tensor = tensor.squeeze().detach();
-    tensor = tensor.permute({1, 2, 0}).contiguous();
-    tensor = tensor.mul(255).clamp(0, 255).to(torch::kU8);
-    tensor = tensor.to(torch::kCPU);
-    int64_t height = tensor.size(0);
-    int64_t width = tensor.size(1);
-    tensor = tensor.reshape({width * height * 3});
-    cv::Mat mat = cv::Mat(cv::Size(width, height), CV_8UC3, 
-        tensor.data_ptr<uchar>());
-    return mat.clone();
-}
-
-torch::Tensor CVMatToTensor(const cv::Mat& mat)
-{
-    std::vector<int64_t> dims = { 1, mat.channels(), mat.rows, mat.cols };
-    int64 step = mat.step; // / sizeof(float);
-    std::vector<int64_t> strides = { 1, 1, step, mat.channels() };
-    auto options = torch::TensorOptions().dtype(torch::kUInt8);
-    return torch::from_blob(mat.data, dims, strides,  options);
 }

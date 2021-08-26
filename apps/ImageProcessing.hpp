@@ -24,7 +24,6 @@ enum class ImagePreprocessingType
     None                  = 0,
     HistogramEqualization = 1,
     CLAHE                 = 2,
-    UIENet                = 3,
 };
 
 ImagePreprocessingType IntToImagePreprocessingType(const int x);
@@ -43,9 +42,6 @@ public:
     static std::pair<cv::Mat, cv::Mat> ProcessImagePairCLAHE(
         const std::shared_ptr<sl::Camera>& camera, const double clipLimit, 
         const int size);
-    static std::pair<cv::Mat, cv::Mat> ProcessImagePairUIENet(
-        const std::shared_ptr<sl::Camera>& camera, 
-        const std::shared_ptr<torch::jit::script::Module>& model);
 
     static void FilterImageBilateral(const cv::Mat& src, cv::Mat& dst, 
         const uint32_t diameter, const uint32_t sigmaColor, 

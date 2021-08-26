@@ -12,13 +12,6 @@ Application::Application(const ApplicationConfiguration& configuration)
     s_Instance = this;
 	m_System = std::make_shared<openvslam::system>(
         m_Configuration.OpenVSLAMConfiguration, m_Configuration.VocabularyPath);
-
-    // Load the Torch model if we want to use it.
-    if (configuration.Preprocessing == ImagePreprocessingType::UIENet)
-    {
-        m_UIENet = std::make_shared<torch::jit::script::Module>(
-            torch::jit::load(configuration.UIENetPath));
-    }
 }
 
 Application::~Application()
@@ -49,10 +42,6 @@ std::tuple<cv::Mat, cv::Mat, double> Application::ProcessImages(
         std::tie(leftImage, rightImage) = 
             StereoImageProcessor::ProcessImagePairCLAHE(camera, 
             m_Configuration.CLAHEClip, m_Configuration.CLAHESize);
-        break;
-    case ImagePreprocessingType::UIENet:
-        std::tie(leftImage, rightImage) = 
-            StereoImageProcessor::ProcessImagePairUIENet(camera, m_UIENet);
         break;
     default:
         std::tie(leftImage, rightImage) = 
