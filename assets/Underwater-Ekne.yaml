@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 
 Camera:
-    name: "ZED Underwater HE"
+    name: "ZED Underwater BLF"
     setup: "stereo"
     model: "perspective"
 
@@ -50,11 +50,11 @@ StereoRectifier:
 # -----------------------------------------------------------------------------
 
 Feature:
-    max_num_keypoints: 1000
+    max_num_keypoints: 2000
     scale_factor: 1.2
     num_levels: 8
     ini_fast_threshold: 10
-    min_fast_threshold: 2
+    min_fast_threshold: 5
 
 # -----------------------------------------------------------------------------
 # ---- Depth threshold --------------------------------------------------------
@@ -74,7 +74,7 @@ Initializer:
 # -----------------------------------------------------------------------------
 
 Mapping:
-  baseline_dist_thr: 0.1
+    baseline_dist_thr: 0.1
 
 # -----------------------------------------------------------------------------
 # ---- Viewer Parameters ------------------------------------------------------

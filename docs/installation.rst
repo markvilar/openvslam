@@ -110,7 +110,7 @@ Prerequisites for Unix
 Installing for Linux
 ^^^^^^^^^^^^^^^^^^^^
 
-Tested for **Ubuntu 16.04**.
+Tested for **Ubuntu 18.04**.
 
 Install the dependencies via ``apt``.
 
@@ -358,6 +358,7 @@ When building with support for SocketViewer, please specify the following cmake 
     cmake \
         -DUSE_PANGOLIN_VIEWER=OFF \
         -DUSE_SOCKET_PUBLISHER=ON \
+        -DINSTALL_SOCKET_PUBLISHER=ON \
         -DUSE_STACK_TRACE_LOGGER=ON \
         -DBUILD_TESTS=ON \
         -DBUILD_EXAMPLES=ON \

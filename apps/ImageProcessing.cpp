@@ -14,9 +14,6 @@ ImagePreprocessingType IntToImagePreprocessingType(const int i)
     case 2:
         o = ImagePreprocessingType::CLAHE;
         break;
-    case 3:
-        o = ImagePreprocessingType::UIENet;
-        break;
     default:
         o = ImagePreprocessingType::None;
         break;
@@ -38,9 +35,6 @@ int ImagePreprocessingTypeToInt(const ImagePreprocessingType x)
     case ImagePreprocessingType::CLAHE:
         y = 2;
         break;
-    case ImagePreprocessingType::UIENet:
-        y = 3;
-        break;
     default:
         y = 0;
         break;
@@ -61,9 +55,6 @@ std::string ToString(const ImagePreprocessingType x)
         break;
     case ImagePreprocessingType::CLAHE:
         y = "CLAHE";
-        break;
-    case ImagePreprocessingType::UIENet:
-        y = "UIENet";
         break;
     default:
         y = "None";
@@ -138,48 +129,6 @@ std::pair<cv::Mat, cv::Mat> StereoImageProcessor::ProcessImagePairCLAHE(
         { size, size });
 
     return { leftImageEqualized, rightImageEqualized };
-}
-
-std::pair<cv::Mat, cv::Mat> StereoImageProcessor::ProcessImagePairUIENet(
-    const std::shared_ptr<sl::Camera>& camera,
-    const std::shared_ptr<torch::jit::script::Module>& model)
-{
-   	sl::Mat leftImage, rightImage;
-    sl::Mat leftImageTest, rightImageTest;
-
-    camera->retrieveImage(leftImage, sl::VIEW::LEFT_UNRECTIFIED, 
-        sl::MEM::GPU);
-    camera->retrieveImage(rightImage, sl::VIEW::RIGHT_UNRECTIFIED, 
-        sl::MEM::GPU);
-
-    auto leftTensorBGRA = StereolabsToTensor(leftImage, 0, false);
-    auto rightTensorBGRA = StereolabsToTensor(rightImage, 0, false);
-
-    // Slice to BGR.
-    auto leftTensorBGR = leftTensorBGRA.slice(1, 0, 3);
-    auto rightTensorBGR = rightTensorBGRA.slice(1, 0, 3);
-
-    // Convert to RGB.
-    auto leftTensorRGB = leftTensorBGR.flip(1);
-    auto rightTensorRGB = rightTensorBGR.flip(1);
-
-    // Convert to float.
-    auto leftInputTensor = leftTensorRGB / 255.0f;
-    auto rightInputTensor = rightTensorRGB / 255.0f;
-
-    // Input tensor to model.
-    std::vector<torch::jit::IValue> leftInput;
-    leftInput.push_back(leftInputTensor);
-    auto leftOutputGPU = model->forward(leftInput).toTensor();
-    std::vector<torch::jit::IValue> rightInput;
-    rightInput.push_back(rightInputTensor);
-    auto rightOutputGPU = model->forward(rightInput).toTensor();
-
-    // Transfer to CPU, scale, convert to uint8 and OpenCV.
-    auto leftOutput = TensorToCVMat(leftOutputGPU);
-    auto rightOutput = TensorToCVMat(rightOutputGPU);
-
-    return { leftOutput.clone(), rightOutput.clone() };
 }
 
 void StereoImageProcessor::FilterImageBilateral(const cv::Mat& src, 

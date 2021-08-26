@@ -277,64 +277,66 @@ void system::abort_loop_BA()
     global_optimizer_->abort_loop_BA();
 }
 
-Mat44_t system::feed_monocular_frame(const cv::Mat& img, 
-    const double timestamp, const cv::Mat& mask) 
-{
+std::shared_ptr<Mat44_t> system::feed_monocular_frame(const cv::Mat& img, const double timestamp, const cv::Mat& mask) {
     assert(camera_->setup_type_ == camera::setup_type_t::Monocular);
 
     check_reset_request();
 
-    const Mat44_t cam_pose_cw = tracker_->track_monocular_image(img, timestamp, 
-        mask);
+
+    const auto cam_pose_wc = tracker_->track_monocular_image(img, timestamp, mask);
 
     frame_publisher_->update(tracker_);
-    if (tracker_->tracking_state_ == tracker_state_t::Tracking) 
-    {
-        map_publisher_->set_current_cam_pose(cam_pose_cw);
-        map_publisher_->set_current_cam_pose_wc(tracker_->curr_frm_.get_cam_pose_inv());
+    if (tracker_->tracking_state_ == tracker_state_t::Tracking && cam_pose_wc) {
+        map_publisher_->set_current_cam_pose(tracker_->curr_frm_.get_cam_pose());
+        map_publisher_->set_current_cam_pose_wc(*cam_pose_wc);
     }
 
-    return cam_pose_cw;
+    return cam_pose_wc;
 }
 
-Mat44_t system::feed_stereo_frame(const cv::Mat& left_img, 
-    const cv::Mat& right_img, const double timestamp, const cv::Mat& mask) 
-{
+
+std::shared_ptr<Mat44_t> system::feed_stereo_frame(const cv::Mat& left_img, const cv::Mat& right_img, const double timestamp, const cv::Mat& mask) {
     assert(camera_->setup_type_ == camera::setup_type_t::Stereo);
 
     check_reset_request();
 
-    const Mat44_t cam_pose_cw = tracker_->track_stereo_image(left_img, 
-        right_img, timestamp, mask);
+    const auto cam_pose_wc = tracker_->track_stereo_image(left_img, right_img, timestamp, mask);
 
     frame_publisher_->update(tracker_);
-    if (tracker_->tracking_state_ == tracker_state_t::Tracking) 
-    {
-        map_publisher_->set_current_cam_pose(cam_pose_cw);
-        map_publisher_->set_current_cam_pose_wc(tracker_->curr_frm_.get_cam_pose_inv());
+    if (tracker_->tracking_state_ == tracker_state_t::Tracking && cam_pose_wc) {
+        map_publisher_->set_current_cam_pose(tracker_->curr_frm_.get_cam_pose());
+        map_publisher_->set_current_cam_pose_wc(*cam_pose_wc);
     }
 
-    return cam_pose_cw;
+    return cam_pose_wc;
 }
 
-Mat44_t system::feed_RGBD_frame(const cv::Mat& rgb_img, 
-    const cv::Mat& depthmap, const double timestamp, const cv::Mat& mask) 
-{
+std::shared_ptr<Mat44_t> system::feed_RGBD_frame(const cv::Mat& rgb_img, const cv::Mat& depthmap, const double timestamp, const cv::Mat& mask) {
     assert(camera_->setup_type_ == camera::setup_type_t::RGBD);
 
     check_reset_request();
 
-    const Mat44_t cam_pose_cw = tracker_->track_RGBD_image(rgb_img, depthmap, 
-        timestamp, mask);
+    const auto cam_pose_wc = tracker_->track_RGBD_image(rgb_img, depthmap, timestamp, mask);
 
     frame_publisher_->update(tracker_);
-    if (tracker_->tracking_state_ == tracker_state_t::Tracking) 
-    {
-        map_publisher_->set_current_cam_pose(cam_pose_cw);
-        map_publisher_->set_current_cam_pose_wc(tracker_->curr_frm_.get_cam_pose_inv());
+    if (tracker_->tracking_state_ == tracker_state_t::Tracking && cam_pose_wc) {
+        map_publisher_->set_current_cam_pose(tracker_->curr_frm_.get_cam_pose());
+        map_publisher_->set_current_cam_pose_wc(*cam_pose_wc);
     }
 
-    return cam_pose_cw;
+    return cam_pose_wc;
+}
+
+bool system::update_pose(const Mat44_t& cam_pose_wc) {
+    const Mat44_t cam_pose_cw = cam_pose_wc.inverse();
+    bool status = tracker_->request_update_pose(cam_pose_cw);
+    if (status) {
+        // Even if state will be lost, still update the pose in map_publisher_
+        // to clearly show new camera position
+        map_publisher_->set_current_cam_pose(cam_pose_cw);
+        map_publisher_->set_current_cam_pose_wc(cam_pose_wc);
+    }
+    return status;
 }
 
 void system::pause_tracker() 
