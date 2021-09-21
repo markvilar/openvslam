@@ -1,7 +1,4 @@
 #include <iostream>
-//#include <algorithm>
-//#include <iomanip>
-//#include <numeric>
 
 #include <glog/logging.h>
 #include <popl.hpp>
@@ -72,9 +69,6 @@ int main(int argc, char* argv[])
     auto optionCLAHESize= options.add<popl::Value<unsigned int>>(
         "", "clahe-size", "CLAHE clip value.", 40);
 
-    auto optionUIENetPath = options.add<popl::Value<std::string>>(
-        "", "uienet", "Path to the UIENet model file.", "");
-   
     // Parse arguments.
     try 
 	{
@@ -131,7 +125,6 @@ int main(int argc, char* argv[])
     configuration.TrackTimesPath = optionTrackTimesPath->value();
     configuration.ProcessTimesPath = optionProcessTimesPath->value();
 
-
     // Settings.
     configuration.FrameSkip = optionFrameSkip->value();
     configuration.FrameStart = optionFrameStart->value();
@@ -149,7 +142,6 @@ int main(int argc, char* argv[])
         optionPreprocessing->value());
     configuration.CLAHEClip = optionCLAHEClip->value();
     configuration.CLAHESize = optionCLAHESize->value();
-    configuration.UIENetPath = optionUIENetPath->value();
 
     // Filter.
     configuration.Filter = optionFilter->value();

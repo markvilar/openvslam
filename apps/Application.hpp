@@ -14,9 +14,10 @@
 
 #ifdef USE_PANGOLIN_VIEWER
 #include "pangolin_viewer/viewer.h"
+#elif USE_SOCKET_PUBLISHER
+#include "socket_publisher/publisher.h"
 #endif
 
-#include <torch/script.h>
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
@@ -51,7 +52,10 @@ private:
 
 #ifdef USE_PANGOLIN_VIEWER
     std::shared_ptr<pangolin_viewer::viewer> m_Viewer;
+#elif USE_SOCKET_PUBLISHER
+    std::shared_ptr<socket_publisher::publisher> m_Publisher;
 #endif
+
     // Tracking.
     std::unique_ptr<std::thread> m_TrackingThread;
     std::shared_ptr<std::vector<float>> m_TrackTimes;
@@ -59,9 +63,6 @@ private:
 
     // Rectifier.
     openvslam::util::stereo_rectifier m_Rectifier;
-
-    // UIENet.
-    std::shared_ptr<torch::jit::script::Module> m_UIENet;
 
     static Application* s_Instance;
     friend int main(int argc, char** argv);
